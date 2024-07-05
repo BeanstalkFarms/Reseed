@@ -1,4 +1,5 @@
 const { exportFert } = require("./barn");
+const { exportPlots } = require("./field");
 
 // Entrypoint for when running individually
 (async () => {
@@ -9,15 +10,19 @@ const { exportFert } = require("./barn");
     throw new Error("Required args not provided. Please provide a block number")
   }
 
+  const block = parseInt(args[1]);
   switch (args[0]) {
     case 'all':
       break;
     case 'silo':
       break;
     case 'field':
+      exportPlots(block);
       break;
     case 'barn':
-      exportFert(parseInt(args[1]));
+      exportFert(block);
+      break;
+    case 'market':
       break;
   }
 
