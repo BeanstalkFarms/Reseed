@@ -1,0 +1,14 @@
+{
+  "scripts": {
+    "all": "node src/main.js all",
+    "silo": "node src/main.js silo",
+    "field": "node src/main.js field",
+    "barn": "node src/main.js barn"
+  },
+  "dependencies": {
+    "alchemy-sdk": "^3.3.1",
+    "dotenv": "^16.3.1",
+    "ethers": "^6.10.0",
+    "graphql-request": "^6.1.0"
+  }
+}
