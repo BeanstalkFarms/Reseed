@@ -1,9 +1,11 @@
 {
   "scripts": {
+    "start": "node src/main.js",
     "all": "node src/main.js all",
     "silo": "node src/main.js silo",
     "field": "node src/main.js field",
-    "barn": "node src/main.js barn"
+    "barn": "node src/main.js barn",
+    "market": "node src/main.js market"
   },
   "dependencies": {
     "@beanstalk/contract-storage": "^1.0.1",

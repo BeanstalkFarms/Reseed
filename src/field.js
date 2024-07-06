@@ -134,4 +134,4 @@ async function exportPlots(block) {
 
 module.exports = {
   exportPlots
-};
+}
