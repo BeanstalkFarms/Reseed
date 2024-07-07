@@ -3,7 +3,7 @@ const { exportPlots } = require("./field");
 const { exportMarket } = require("./market");
 const { exportDeposits } = require("./silo");
 
-// Entrypoint for when running individually
+// Main entrypoint for all scripts
 (async () => {
 
   const args = process.argv.slice(2);
@@ -36,15 +36,3 @@ const { exportDeposits } = require("./silo");
   }
 
 })()
-
-async function silo() {
-  
-}
-
-async function field() {
-  
-}
-
-async function barn() {
-
-}

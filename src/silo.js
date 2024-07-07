@@ -4,7 +4,7 @@ const { BEANSTALK, BEAN, UNRIPE_BEAN, UNRIPE_LP, BEAN3CRV, BEANWETH } = require(
 const { providerThenable } = require('./contracts/provider');
 const { tokenEq } = require('./utils/token.js');
 const { bigintHex, bigintDecimal } = require('./utils/json-formatter.js');
-const { asyncBeanstalkContractGetter } = require('./contracts/contract-function.js');
+const { asyncBeanstalkContractGetter } = require('./contracts/contract.js');
 const retryable = require('./utils/retryable.js');
 const storageLayout = require('./contracts/abi/storageLayout.json');
 const ContractStorage = require('@beanstalk/contract-storage');
@@ -136,12 +136,17 @@ async function processLine(deposits, line) {
     }
     version = 'season';
   }
+  if (!deposits[account][token][stem]) {
+    deposits[account][token][stem] = {
+      amount: BigInt(0),
+      bdv: BigInt(0),
+      version: []
+    };
+  }
 
-  deposits[account][token][stem] = {
-    amount: BigInt(amount),
-    bdv: BigInt(bdv),
-    version
-  };
+  deposits[account][token][stem].amount += BigInt(amount);
+  deposits[account][token][stem].bdv += BigInt(bdv);
+  deposits[account][token][stem].version.push(version);
 
   process.stdout.write(`\r${++parseProgress} / ?`);
 }
@@ -162,7 +167,7 @@ function calcDepositTotals(deposits) {
       for (const stem in deposits[account][token]) {
         deposits[account].totals[token].amount += deposits[account][token][stem].amount;
         deposits[account].totals[token].bdv += deposits[account][token][stem].bdv;
-        if (deposits[account][token][stem].version === 'season') {
+        if (deposits[account][token][stem].version.includes('season')) {
           deposits[account].totals[token].seeds += deposits[account][token][stem].bdv * getLegacySeedsPerToken(token);
         }
       }
@@ -244,7 +249,7 @@ async function checkWallet(results, deposits, depositor) {
     let netTokenStalk = 0n;
     let undivided = 0n;
     for (const stem in deposits[depositor][token]) {
-      if (deposits[depositor][token][stem].version === 'season') {
+      if (deposits[depositor][token][stem].version.includes('season')) {
         mowStem = seasonToStem(accountUpdates[depositor], getLegacySeedsPerToken(token));
       }
       const stemDelta = mowStem - BigInt(stem);
@@ -369,3 +374,6 @@ async function exportDeposits(block) {
 module.exports = {
   exportDeposits
 }
+
+console.log('v3', packAddressAndStem("0xbea0000029ad1c77d3d5d23ba2d8893db9d1efab", -16096).toString(16))
+console.log('v3.1', packAddressAndStem("0xbea0000029ad1c77d3d5d23ba2d8893db9d1efab", -16096000000).toString(16))

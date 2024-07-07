@@ -1,6 +1,6 @@
 const fs = require('fs');
 const readline = require('readline');
-const { asyncFertContractGetter } = require('./contracts/contract-function.js');
+const { asyncFertContractGetter } = require('./contracts/contract.js');
 const { bigintDecimal } = require('./utils/json-formatter.js');
 const retryable = require('./utils/retryable.js');
 
@@ -12,6 +12,8 @@ let checkProgress = 0;
 let fert;
 let sumFertEvent = BigInt(0);
 let sumFertContract = BigInt(0);
+let sumRinsable = BigInt(0);
+let sumUnrinsable = BigInt(0);
 
 let balances = {};
 
@@ -19,9 +21,9 @@ async function checkBalance(line) {
   const [_, account, _1, eventAmount, humidity, id] = line.split(',');
 
   const [contractAmount, rinsableSprouts, unrinsableSprouts] = await Promise.all([
-    retryable(() => fert.callStatic.balanceOf(account, id, { blockTag: BLOCK })),
-    retryable(() => fert.callStatic.balanceOfFertilized(account, [id], { blockTag: BLOCK })),
-    retryable(() => fert.callStatic.balanceOfUnfertilized(account, [id], { blockTag: BLOCK }))
+    retryable(() => fert.callStatic.balanceOf(account, id, { blockTag: BLOCK })).then(BigInt),
+    retryable(() => fert.callStatic.balanceOfFertilized(account, [id], { blockTag: BLOCK })).then(BigInt),
+    retryable(() => fert.callStatic.balanceOfUnfertilized(account, [id], { blockTag: BLOCK })).then(BigInt)
   ]);
 
   if (BigInt(eventAmount) != BigInt(contractAmount)) {
@@ -29,6 +31,8 @@ async function checkBalance(line) {
   }
   sumFertEvent += BigInt(eventAmount);
   sumFertContract += BigInt(contractAmount);
+  sumRinsable += rinsableSprouts;
+  sumUnrinsable += unrinsableSprouts;
 
   if (!balances[account]) {
     balances[account] = {};
@@ -75,6 +79,11 @@ async function exportFert(block) {
   if (sumFertEvent !== sumFertContract) {
     console.log(`[WARNING]: Fertilizer amount mismatch detected: ${sumFertEvent} | ${sumFertContract}`);
   }
+
+  balances.totals = {
+    sumRinsable,
+    sumUnrinsable
+  };
 
   const outFile = `results/fert${BLOCK}.json`;
   await fs.promises.writeFile(outFile, JSON.stringify(balances, bigintDecimal, 2));
