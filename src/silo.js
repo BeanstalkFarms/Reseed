@@ -29,6 +29,9 @@ let parseProgress = 0;
 let walletProgress = 0;
 let stemTips = {};
 
+let netSystemStalk = BigInt(0);
+let netSystemMownStalk = BigInt(0);
+
 const BATCH_SIZE = 100;
 
 // Equivalent to LibBytes.packAddressAndStem
@@ -97,13 +100,13 @@ async function processLine(deposits, line) {
 
   let version = '';
 
+  if (!stemTips[token]) {
+    stemTips[token] = await retryable(async () =>
+      BigInt(await beanstalk.callStatic.stemTipForToken(token, { blockTag: BLOCK }))
+    );
+  }
+
   if (stem !== '') {
-    // This is needed for the v3.1 edgecase
-    if (!stemTips[token]) {
-      stemTips[token] = await retryable(async () =>
-        BigInt(await beanstalk.callStatic.stemTipForToken(token, { blockTag: BLOCK }))
-      );
-    }
 
     // Silo v3 migrated stems. Transform to v3.1 if needed
     const { actualStem, isMigrated3_1 } = await transformStem(account, token, BigInt(stem));
@@ -153,24 +156,22 @@ async function processLine(deposits, line) {
 }
 
 // Now that all deposits are populated, calculate total deposited amount/bdv for each token per user
-function calcDepositTotals(deposits) {
-  for (const account in deposits) {
-    deposits[account].totals = {};
-    for (const token in deposits[account]) {
-      if (token == 'totals') {
-        continue;
-      }
-      deposits[account].totals[token] = {
-        amount: 0n,
-        bdv: 0n,
-        seeds: 0n
-      };
-      for (const stem in deposits[account][token]) {
-        deposits[account].totals[token].amount += deposits[account][token][stem].amount;
-        deposits[account].totals[token].bdv += deposits[account][token][stem].bdv;
-        if (deposits[account][token][stem].version.includes('season')) {
-          deposits[account].totals[token].seeds += deposits[account][token][stem].bdv * getLegacySeedsPerToken(token);
-        }
+function calcDepositTotals(account, deposits) {
+  deposits[account].totals = {};
+  for (const token in deposits[account]) {
+    if (token == 'totals') {
+      continue;
+    }
+    deposits[account].totals[token] = {
+      amount: 0n,
+      bdv: 0n,
+      seeds: 0n
+    };
+    for (const stem in deposits[account][token]) {
+      deposits[account].totals[token].amount += deposits[account][token][stem].amount;
+      deposits[account].totals[token].bdv += deposits[account][token][stem].bdv;
+      if (deposits[account][token][stem].version.includes('season')) {
+        deposits[account].totals[token].seeds += deposits[account][token][stem].bdv * getLegacySeedsPerToken(token);
       }
     }
   }
@@ -224,13 +225,33 @@ async function checkWallets(deposits) {
   }, {});
 }
 
-// Deposits is mutated only to add the computed value for expected stalk
+// Deposits is mutated to add the computed value for expected stalk, mowable stalk, germination info,
+// and plants any earned beans
 async function checkWallet(results, deposits, depositor) {
 
   accountUpdates[depositor] = await bs.s.a[depositor].lastUpdate;
   results[depositor] = { breakdown: {} };
 
+  // Plant at the current stem if there are any earned beans
+  const earnedBeans = BigInt(await retryable(async () => 
+    beanstalk.callStatic.balanceOfEarnedBeans(depositor, { blockTag: BLOCK })
+  ));
+  if (earnedBeans !== BigInt(0)) {
+    if (!deposits[depositor][BEAN]) {
+      deposits[depositor][BEAN] = {};
+    }
+    deposits[depositor][BEAN][stemTips[BEAN]] = {
+      amount: earnedBeans,
+      bdv: earnedBeans,
+      version: ['v3.1'],
+      stalk: earnedBeans * BigInt(10 ** 4),
+      stalkIfMown: earnedBeans * BigInt(10 ** 4)
+    };
+  }
+  calcDepositTotals(depositor, deposits);
+
   let netDepositorStalk = 0n;
+  let netDepositorMownStalk = 0n;
   for (const token in deposits[depositor]) {
     if (token == 'totals') {
       continue;
@@ -248,18 +269,26 @@ async function checkWallet(results, deposits, depositor) {
     }
 
     let netTokenStalk = 0n;
-    let undivided = 0n;
+    let netTokenMownStalk = 0n;
     for (const stem in deposits[depositor][token]) {
-      if (deposits[depositor][token][stem].version.includes('season')) {
-        mowStem = seasonToStem(accountUpdates[depositor], getLegacySeedsPerToken(token));
+      // earned beans were already calculated above
+      if (!deposits[depositor][token][stem].stalk) {
+        if (deposits[depositor][token][stem].version.includes('season')) {
+          mowStem = seasonToStem(accountUpdates[depositor], getLegacySeedsPerToken(token));
+        }
+        // Current delta, max delta (if mown now)
+        const stemDeltas = [mowStem - BigInt(stem), stemTips[token] - BigInt(stem)];
+        // Deposit stalk = grown + base stalk
+        // stems have 6 precision, though 10 is needed to grow one stalk. 10 + 6 - 6 => 10 precision for stalk
+        const stalk = stemDeltas.map(delta => (delta + 10000000000n) * deposits[depositor][token][stem].bdv / BigInt(10 ** 6));
+        deposits[depositor][token][stem].stalk = stalk[0];
+        deposits[depositor][token][stem].stalkIfMown = stalk[1];
       }
-      const stemDelta = mowStem - BigInt(stem);
-      // Deposit stalk = grown + base stalk
-      // stems have 6 precision, though 10 is needed to grow one stalk. 10 + 6 - 6 => 10 precision for stalk
-      netTokenStalk += (stemDelta + 10000000000n) * deposits[depositor][token][stem].bdv / BigInt(10 ** 6);
-      undivided += (stemDelta + 10000000000n) * deposits[depositor][token][stem].bdv;
+      netTokenStalk += deposits[depositor][token][stem].stalk;
+      netTokenMownStalk += deposits[depositor][token][stem].stalkIfMown;
     }
     netDepositorStalk += netTokenStalk;
+    netDepositorMownStalk += netTokenMownStalk;
     results[depositor].breakdown[token] = netTokenStalk;
   }
 
@@ -287,6 +316,9 @@ async function checkWallet(results, deposits, depositor) {
     even: evenGerm
   };
 
+  netSystemStalk += netDepositorStalk;
+  netSystemMownStalk += netDepositorMownStalk;
+
   process.stdout.write(`\r${++walletProgress} / ${Object.keys(deposits).length}`);
 }
 
@@ -294,8 +326,11 @@ async function checkWallet(results, deposits, depositor) {
 // anything that has finished germinating or is still germinating (and this not part of s.a[depositor].s.stalk)
 // NOT including earned beans since we are only trying to verify deposits.
 async function getContractStalk(account) {
-  const [storage, germinating, doneGerminating] = await Promise.all([
+  const [storage, earned, germinating, doneGerminating] = await Promise.all([
     bs.s.a[account].s.stalk,
+    retryable(async () => 
+      BigInt(await beanstalk.callStatic.balanceOfEarnedStalk(account, { blockTag: BLOCK }))
+    ),
     retryable(async () => {
       try {
         return BigInt(await beanstalk.callStatic.balanceOfGerminatingStalk(account, { blockTag: BLOCK }));
@@ -313,7 +348,7 @@ async function getContractStalk(account) {
       }
     })
   ]);
-  return storage + germinating + doneGerminating;
+  return storage + earned + germinating + doneGerminating;
 }
 
 async function exportDeposits(block) {
@@ -355,7 +390,6 @@ async function exportDeposits(block) {
     await preProcessInit(deposits, linesBuffer);
     await Promise.all(linesBuffer.map(line => processLine(deposits, line)));
   }
-  calcDepositTotals(deposits);
 
   console.log(`\rFinished processing ${parseProgress} entries`);
 
@@ -375,6 +409,12 @@ async function exportDeposits(block) {
   );
   await fs.promises.writeFile(discrepancyFile, JSON.stringify(formatted, bigintHex, 2));
   console.log(`Wrote discrepancy summary to ${discrepancyFile}`);
+
+  console.log('--------------------------------------------------------------------------------------');
+  console.log(`Sum of all user stalk (including earned and germinating): ${netSystemStalk}`);
+  // TODO: this should subtract system level germinating stalk
+  console.log(`Expected sum (s.s.stalk):                                 ${await bs.s.s.stalk}`);
+  console.log(`Sum after all is mown/planted:                            ${netSystemMownStalk}`);
 }
 
 module.exports = {
