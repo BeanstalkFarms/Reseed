@@ -351,6 +351,16 @@ async function getContractStalk(account) {
   return storage + earned + germinating + doneGerminating;
 }
 
+async function getSystemGerminating() {
+  const both = await Promise.all(['oddGerminating', 'evenGerminating'].map(async field => {
+    const germinating = await Promise.all([BEAN, BEANWETH, UNRIPE_BEAN, UNRIPE_LP].map(token =>
+      bs.s[field].deposited[token].bdv
+    ));
+    return germinating.reduce((a, next) => a + next * BigInt(10 ** 4), 0n);
+  }));
+  return both.reduce((a, next) => a + next, 0n);
+}
+
 async function exportDeposits(block) {
 
   BLOCK = block;
@@ -412,8 +422,11 @@ async function exportDeposits(block) {
 
   console.log('--------------------------------------------------------------------------------------');
   console.log(`Sum of all user stalk (including earned and germinating): ${netSystemStalk}`);
-  // TODO: this should subtract system level germinating stalk
-  console.log(`Expected sum (s.s.stalk):                                 ${await bs.s.s.stalk}`);
+  const storageGerminating = await getSystemGerminating();
+  const storageStalk =  await bs.s.s.stalk - storageGerminating;
+  console.log(`Expected sum (s.s.stalk - s.odd/evenGerminating):         ${storageStalk}`);
+  console.log(`Difference?                                               ${storageStalk - netSystemStalk}`)
+  console.log(`System germinating:                                       ${storageGerminating}`);
   console.log(`Sum after all is mown/planted:                            ${netSystemMownStalk}`);
 }
 
