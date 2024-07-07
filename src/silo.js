@@ -423,8 +423,9 @@ async function exportDeposits(block) {
   console.log('--------------------------------------------------------------------------------------');
   console.log(`Sum of all user stalk (including earned and germinating): ${netSystemStalk}`);
   const storageGerminating = await getSystemGerminating();
-  const storageStalk =  await bs.s.s.stalk - storageGerminating;
-  console.log(`Expected sum (s.s.stalk - s.odd/evenGerminating):         ${storageStalk}`);
+  // Germinating is added here because it was added into all user balances already
+  const storageStalk =  await bs.s.s.stalk + storageGerminating;
+  console.log(`Expected sum (s.s.stalk + s.odd/evenGerminating):         ${storageStalk}`);
   console.log(`Difference?                                               ${storageStalk - netSystemStalk}`)
   console.log(`System germinating:                                       ${storageGerminating}`);
   console.log(`Sum after all is mown/planted:                            ${netSystemMownStalk}`);
