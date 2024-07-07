@@ -1,7 +1,7 @@
 const fs = require('fs');
 const readline = require('readline');
 const { BEANSTALK, BEAN, UNRIPE_BEAN, UNRIPE_LP, BEAN3CRV, BEANWETH } = require('./contracts/addresses.js');
-const { providerThenable } = require('./contracts/provider');
+const { providerThenable, localProvider } = require('./contracts/provider');
 const { tokenEq } = require('./utils/token.js');
 const { bigintHex, bigintDecimal } = require('./utils/json-formatter.js');
 const { asyncBeanstalkContractGetter } = require('./contracts/contract.js');
@@ -9,6 +9,7 @@ const retryable = require('./utils/retryable.js');
 const storageLayout = require('./contracts/abi/storageLayout.json');
 const ContractStorage = require('@beanstalk/contract-storage');
 
+let LOCAL = false;
 let BLOCK;
 let beanstalk;
 let bs;
@@ -319,8 +320,13 @@ async function exportDeposits(block) {
 
   BLOCK = block;
 
-  beanstalk = await asyncBeanstalkContractGetter();
-  bs = new ContractStorage(await providerThenable, BEANSTALK, storageLayout, BLOCK);
+  if (!LOCAL) {
+    beanstalk = await asyncBeanstalkContractGetter();
+    bs = new ContractStorage(await providerThenable, BEANSTALK, storageLayout, BLOCK);
+  } else {
+    beanstalk = await asyncBeanstalkContractGetter(true);
+    bs = new ContractStorage(localProvider, BEANSTALK, storageLayout, BLOCK);
+  }
   stemStartSeason = await bs.s.season.stemStartSeason;
   stemScaleSeason = await bs.s.season.stemScaleSeason;
 
@@ -373,7 +379,10 @@ async function exportDeposits(block) {
 
 module.exports = {
   exportDeposits
-}
+};
 
-console.log('v3', packAddressAndStem("0xbea0000029ad1c77d3d5d23ba2d8893db9d1efab", -16096).toString(16))
-console.log('v3.1', packAddressAndStem("0xbea0000029ad1c77d3d5d23ba2d8893db9d1efab", -16096000000).toString(16))
+// const ethers = require('ethers');
+// (async () => {
+//   const receipt = await localProvider.getTransactionReceipt("0xc1a59e011fef5e6d2e086118d1b65ce8c9daf6ee245c23637954428280737a62");
+//   console.log(receipt.logs);
+// })()

@@ -1,4 +1,5 @@
-const { alchemy } = require('./provider.js');
+const ethers = require('ethers')
+const { providerThenable, localProvider } = require('./provider.js');
 const { Contract } = require('alchemy-sdk');
 const { BEANSTALK, FERTILIZER, DECIMALS } = require('./addresses.js');
 const beanAbi = require('./abi/beanstalk.json');
@@ -10,26 +11,25 @@ async function getContractAsync(address, abi, isLocal = false) {
   const key = JSON.stringify({ address, abi, isLocal });
   if (contracts[key] == null) {
     if (!isLocal) {
-      contracts[key] = new Contract(address, abi, await alchemy.config.getProvider());
+      contracts[key] = new Contract(address, abi, await providerThenable);
     } else {
-      const provider = new ethers.JsonRpcProvider('http://localhost:8545');
-      const contract = new ethers.Contract(address, abi, provider);
+      const contract = new ethers.Contract(address, abi, localProvider);
       const handler = {
-          get: function(target, prop, receiver) {
-              if (prop === 'callStatic') {
-                  return new Proxy(target, {
-                      get: function(target, method, receiver) {
-                          if (typeof target[method] === 'function') {
-                              return target[method].bind(target);
-                          }
-                          return Reflect.get(target, method, receiver);
-                      }
-                  });
+        get: function(_, prop, _1) {
+          if (prop === 'then') {
+            return contract;
+          } else if (prop === 'callStatic') {
+            return new Proxy({}, {
+              get: function(_, prop, _1) {
+                return contract[prop];
               }
-              return Reflect.get(target, prop, receiver);
+            });
           }
+          return contract[prop];
+        }
       };
-      const proxyContract = new Proxy(contract, handler);
+
+      const proxyContract = new Proxy({}, handler);
       contracts[key] = proxyContract;
     }
   }
@@ -45,7 +45,7 @@ async function getBalance(token, holder, blockNumber = 'latest') {
 }
 
 module.exports = {
-  asyncBeanstalkContractGetter: async () => getContractAsync(BEANSTALK, beanAbi),
+  asyncBeanstalkContractGetter: async (isLocal = false) => getContractAsync(BEANSTALK, beanAbi, isLocal),
   asyncFertContractGetter: async () => getContractAsync(FERTILIZER, fertAbi),
   createAsyncERC20ContractGetter: (address) => async () => getContractAsync(address, erc20Abi),
   getContractAsync: getContractAsync,
