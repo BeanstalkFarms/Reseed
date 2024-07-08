@@ -1,4 +1,5 @@
 const fs = require('fs');
+const ethers = require('ethers');
 const { BEANSTALK } = require('./contracts/addresses.js');
 const storageLayout = require('./contracts/abi/storageLayout.json');
 const { providerThenable } = require('./contracts/provider');
@@ -10,9 +11,16 @@ const { bigintHex } = require('./utils/json-formatter.js');
 const BATCH_SIZE = 100;
 let BLOCK;
 
+// The id encoding is different on each
 const marketStorage = {
-  listings: {},
-  orders: {}
+  listings: {
+    beanstalk2: {},
+    beanstalk3: {}
+  },
+  orders: {
+    beanstalk2: {},
+    beanstalk3: {}
+  }
 };
 
 let checkProgress = 0;
@@ -49,7 +57,16 @@ async function getMarketFromSubgraph() {
       {
         podListings {
           id
+          farmer {
+            id
+          }
           index
+          start
+          amount
+          pricePerPod
+          maxHarvestableIndex
+          minFillAmount
+          mode
         }
       }
     `,
@@ -66,6 +83,12 @@ async function getMarketFromSubgraph() {
       {
         podOrders {
           id
+          farmer {
+            id
+          }
+          pricePerPod
+          maxPlaceInLine
+          minFillAmount
         }
       }
     `,
@@ -88,7 +111,8 @@ async function checkListing(listing) {
   if (BigInt(listingHash) === BigInt(0)) {
     console.log(`[WARNING]: A pod listing for index ${listing.index} was not found!`);
   }
-  marketStorage.listings[listing.index] = listingHash;
+  marketStorage.listings.beanstalk2[listing.index] = listingHash;
+  marketStorage.listings.beanstalk3[listing.index] = hashListing(listing);
 
   process.stdout.write(`\r${++checkProgress}`);
 }
@@ -99,9 +123,52 @@ async function checkOrder(order) {
   if (orderAmount === BigInt(0)) {
     console.log(`[WARNING]: A pod order for id ${order.id} was not found!`);
   }
-  marketStorage.orders[order.id] = orderAmount;
-  
+  marketStorage.orders.beanstalk2[order.id] = orderAmount;
+  marketStorage.orders.beanstalk3[hashOrder(order)] = orderAmount;
+
   process.stdout.write(`\r${++checkProgress}`);
+}
+
+// Same as Listing.sol::_hashListing()
+function hashListing(listing) {
+  return ethers.keccak256(ethers.solidityPacked(
+    ['address', 'uint256', 'uint256', 'uint256', 'uint256', 'uint24', 'uint256', 'uint256', 'uint8'],
+    [listing.farmer.id, 0, listing.index, listing.start, listing.amount, listing.pricePerPod, listing.maxHarvestableIndex, listing.minFillAmount, listing.mode]
+  ));
+
+  // Pre-migration format. Not needed but kept here for reference.
+  // if (listing.minFillAmount > 0) {
+  //   return ethers.keccak256(ethers.solidityPacked(
+  //     ['uint256', 'uint256', 'uint24', 'uint256', 'uint256', 'bool'],
+  //     [listing.start, listing.amount, listing.pricePerPod, listing.maxHarvestableIndex, listing.minFillAmount, listing.mode === 0]
+  //   ));
+  // } else {
+  //   return ethers.keccak256(ethers.solidityPacked(
+  //     ['uint256', 'uint256', 'uint24', 'uint256', 'bool'],
+  //     [listing.start, listing.amount, listing.pricePerPod, listing.maxHarvestableIndex, listing.mode === 0]
+  //   ));
+  // }
+}
+
+// Same as Order.sol::_getOrderId()
+function hashOrder(order) {
+  return ethers.keccak256(ethers.solidityPacked(
+    ['address', 'uint256', 'uint24', 'uint256', 'uint256'],
+    [order.farmer.id, 0, order.pricePerPod, order.maxPlaceInLine, order.minFillAmount]
+  ));
+
+  // Pre-migration format. Not needed but kept here for reference.
+  // if (order.minFillAmount > 0) {
+  //   return ethers.keccak256(ethers.solidityPacked(
+  //     ['address', 'uint24', 'uint256', 'uint256'],
+  //     [order.farmer.id, order.pricePerPod, order.maxPlaceInLine, order.minFillAmount]
+  //   ));
+  // } else {
+  //   return ethers.keccak256(ethers.solidityPacked(
+  //     ['address', 'uint24', 'uint256'],
+  //     [order.farmer.id, order.pricePerPod, order.maxPlaceInLine]
+  //   ));
+  // }
 }
 
 // NOTE: it is not possible to verify with certainty that ALL pod listings/orders are encapsulated here.

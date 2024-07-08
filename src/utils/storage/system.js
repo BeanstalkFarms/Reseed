@@ -47,15 +47,15 @@ async function systemStruct(options) {
     plenty: 0, // ?
     soil,
     beansSown,
-    activeField: 0, // ?
-    fieldCount: 1, // ?
+    activeField: 0,
+    fieldCount: 1,
     // bytes32[16] _buffer_0;
     podListings,
     podOrders,
     internalTokenBalanceTotal,
     wellOracleSnapshots,
     twaReserves,
-    usdTokenPrice, // ?
+    usdTokenPrice: {}, // ?
     sops,
     fields,
     convertCapacity,

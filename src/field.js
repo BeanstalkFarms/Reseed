@@ -99,6 +99,19 @@ async function exportPlots(block) {
 
   let allPlots = await getAllPlots();
 
+  const csvOutFile = `results/pods${BLOCK}.csv`
+  const harvestableIndex = await bs.s.f.harvestable;
+  const csvString = 'account,index,amount,placeInLine,numHarvestable\n' + allPlots.map(b => {
+    const account = b.farmer.id;
+    const index = b.index / Math.pow(10, 6);
+    const pods = b.pods / Math.pow(10, 6);
+    const placeInLine = (b.index - Number(harvestableIndex)) / Math.pow(10, 6);
+    const harvestable = b.harvestablePods / Math.pow(10, 6);
+    return [account, index, pods, placeInLine, harvestable].join(',');
+  }).join('\n');
+  await fs.promises.writeFile(csvOutFile, csvString);
+  console.log(`Plots exported to ${csvOutFile}`);
+
   // Sum the total amount of pods
   let totalPods = BigInt(0);
   for (const plot of allPlots) {
