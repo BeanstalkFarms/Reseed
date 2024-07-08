@@ -2,6 +2,7 @@ const { exportFert } = require("./barn");
 const { exportPlots } = require("./field");
 const { exportMarket } = require("./market");
 const { exportDeposits } = require("./silo");
+const { exportStorage } = require("./storage");
 
 // Main entrypoint for all scripts
 (async () => {
@@ -32,6 +33,9 @@ const { exportDeposits } = require("./silo");
       break;
     case 'market':
       await exportMarket(block);
+      break;
+    case 'storage':
+      await exportStorage(block);
       break;
   }
 
