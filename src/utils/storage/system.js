@@ -1,8 +1,9 @@
 const fs = require('fs');
 const { plentySeasons } = require('../../../inputs/plenty-seasons.js');
-const { BEAN, BEANWETH, BEAN3CRV, UNRIPE_BEAN, UNRIPE_LP } = require('../../contracts/addresses.js');
+const { BEANSTALK, BEAN, BEANWETH, BEAN3CRV, UNRIPE_BEAN, UNRIPE_LP } = require('../../contracts/addresses.js');
 const { getActualActiveFertilizer, getActualFertilizedIndex, getActualUnfertilizedIndex, getClaimedFert } = require('../barn/barn-util.js');
 const { tokenEq } = require('../token.js');
+const { createAsyncERC20ContractGetter } = require('../../contracts/contract.js');
 
 const WHITELISTED = [BEAN, BEANWETH, BEAN3CRV, UNRIPE_BEAN, UNRIPE_LP]; // TODO wsteth
 const WHITELISTED_LP = [BEANWETH, BEAN3CRV]; // TODO wsteth
@@ -468,8 +469,8 @@ async function unripeSettingsStructs() {
 
 async function twaReservesStruct(pool) {
   const [reserve0, reserve1] = await Promise.all([
-    bs.s.twaReserves[BEANWETH].reserve0,
-    bs.s.twaReserves[BEANWETH].reserve1
+    bs.s.twaReserves[pool].reserve0,
+    bs.s.twaReserves[pool].reserve1
   ]);
   return {
     reserve0,
@@ -501,10 +502,6 @@ async function germinatingMapping() {
   }
 }
 
-async function convertCapacityStruct() {
-
-}
-
 async function unclaimedGerminatingMapping() {
   // Enumerate all seasons since seedgauge deployment and save those which have unclaimed germinating
   const startSeason = 21797;
@@ -530,20 +527,20 @@ async function unclaimedGerminatingMapping() {
   return unclaimedGerminating;
 }
 
-async function shipmentRouteStruct() {
-
-}
-
 async function migrationStruct() {
-  // TODO: set this according to total supply minus beanstalk/beaneth/bean3crv/beanwsteth
+  // Set this according to total supply minus beanstalk/beaneth/bean3crv/beanwsteth
+  const beanToken = await createAsyncERC20ContractGetter(BEAN)();
+  const totalSupply = BigInt(await beanToken.callStatic.totalSupply({blockTag: BLOCK}));
+  const beanstalkBalance = BigInt(await beanToken.callStatic.balanceOf(BEANSTALK, {blockTag: BLOCK}));
+  const beanethBalance = BigInt(await beanToken.callStatic.balanceOf(BEANWETH, {blockTag: BLOCK}));
+  const bean3crvBalance = BigInt(await beanToken.callStatic.balanceOf(BEAN3CRV, {blockTag: BLOCK}));
+  // const beanwstethBalance = BigInt(await beanToken.callStatic.balanceOf(BEANWETH, {blockTag: BLOCK}));
+
+  // TODO: BEANwstETH
   return {
-    migratedL1Beans: 0n,
+    migratedL1Beans: totalSupply - beanstalkBalance - beanethBalance - bean3crvBalance /*- beanwstethBalance*/,
     // bytes32[4] _buffer_;
   };
-}
-
-async function implementationStruct() {
-  
 }
 
 async function seedGaugeSettingsStruct() {
