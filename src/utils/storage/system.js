@@ -2,6 +2,7 @@ const fs = require('fs');
 const { plentySeasons } = require('../../../inputs/plenty-seasons.js');
 const { BEANWETH } = require('../../contracts/addresses.js');
 const { getActualActiveFertilizer, getActualFertilizedIndex, getActualUnfertilizedIndex, getClaimedFert } = require('../barn/barn-util.js');
+const { tokenEq } = require('../token.js');
 
 let BLOCK;
 let beanstalk;
@@ -194,39 +195,164 @@ async function fertilizerStruct() {
     activeFertilizer,
     fertilizedIndex,
     unfertilizedIndex,
-    fertilizedPaidIndex: getClaimedFert(BLOCK),
+    fertilizedPaidIndex: BigInt(getClaimedFert(BLOCK)),
     fertFirst,
     fertLast,
     bpf,
     recapitalized,
     // Amount of beans shipped to fert but unpaid due to not being proportional to active fert. previously untracked
-    leftoverBeans: 0
+    leftoverBeans: 0n
     // bytes32[8] _buffer;
   }
 }
 
 async function seasonStruct() {
-
+  console.log('Gathering season info...');
+  const [
+    current,
+    lastSop,
+    withdrawSeasons,
+    lastSopSeason,
+    rainStart,
+    raining,
+    fertilizing,
+    sunriseBlock,
+    abovePeg,
+    stemStartSeason,
+    stemScaleSeason,
+    start,
+    period,
+    timestamp
+  ] = await Promise.all([
+    bs.s.season.current,
+    bs.s.season.lastSop,
+    bs.s.season.withdrawSeasons,
+    bs.s.season.lastSopSeason,
+    bs.s.season.rainStart,
+    bs.s.season.raining,
+    bs.s.season.fertilizing,
+    bs.s.season.sunriseBlock,
+    bs.s.season.abovePeg,
+    bs.s.season.stemStartSeason,
+    bs.s.season.stemScaleSeason,
+    bs.s.season.start,
+    bs.s.season.period,
+    bs.s.season.timestamp,
+  ]);
+  return {
+    current,
+    lastSop,
+    withdrawSeasons,
+    lastSopSeason,
+    rainStart,
+    raining,
+    fertilizing,
+    sunriseBlock,
+    abovePeg,
+    stemStartSeason,
+    stemScaleSeason,
+    start,
+    period,
+    timestamp
+    // bytes32[8] _buffer;
+  }
 }
 
 async function weatherStruct() {
-
+  console.log('Gathering weather info...');
+  const [
+    lastDeltaSoil,
+    lastSowTime,
+    thisSowTime,
+    temp
+  ] = await Promise.all([
+    bs.s.w.lastDSoil,
+    bs.s.w.lastSowTime,
+    bs.s.w.thisSowTime,
+    bs.s.w.t
+  ]);
+  return {
+    lastDeltaSoil,
+    lastSowTime,
+    thisSowTime,
+    temp
+    // bytes32[8] _buffer;
+  }
 }
 
 async function seedGaugeStruct() {
-
+  console.log('Gathering gauge info...');
+  const [
+    averageGrownStalkPerBdvPerSeason,
+    beanToMaxLpGpPerBdvRatio
+  ] = await Promise.all([
+    bs.s.seedGauge.averageGrownStalkPerBdvPerSeason,
+    bs.s.seedGauge.beanToMaxLpGpPerBdvRatio
+  ]);
+  return {
+    averageGrownStalkPerBdvPerSeason,
+    beanToMaxLpGpPerBdvRatio
+    // bytes32[8] _buffer;
+  }
 }
 
 async function rainStruct() {
-
+  console.log('Gathering rain info...');
+  const [
+    pods,
+    roots
+  ] = await Promise.all([
+    bs.s.r.pods,
+    bs.s.r.roots
+  ]);
+  return {
+    pods,
+    roots
+    // bytes32[8] _buffer;
+  }
 }
 
-async function assetSiloStruct() {
-
+async function assetSiloStruct(token) {
+  console.log('Gathering asset silo info (${token})...');
+  const [
+    deposited,
+    depositedBdv
+  ] = await Promise.all([
+    bs.s.siloBalances[token].deposited,
+    bs.s.siloBalances[token].depositedBdv
+    // TODO: what to do with withdrawn? These corresponding assets should be put into user internal balances
+    // bs.s.siloBalances[token].withdrawn
+  ]);
+  return {
+    deposited,
+    depositedBdv
+  }
 }
 
-async function whitelistStatusStruct() {
-
+async function whitelistStatusStructs() {
+  console.log('Gathering whitelist info...');
+  const whitelistStatuses = [];
+  // 6 whitelisted tokens
+  for (let i = 0; i < 6; ++i) {
+    const [
+      token,
+      isWhitelisted,
+      isWhitelistedLp,
+      isWhitelistedWell
+    ] = await Promise.all([
+      bs.s.whitelistStatuses[i].token,
+      bs.s.whitelistStatuses[i].isWhitelisted,
+      bs.s.whitelistStatuses[i].isWhitelistedLp,
+      bs.s.whitelistStatuses[i].isWhitelistedWell
+    ]);
+    whitelistStatuses.push({
+      token,
+      isWhitelisted,
+      isWhitelistedLp,
+      isWhitelistedWell,
+      isSoppable: tokenEq(token, BEANWETH) // TODO: how to determine which one is soppable?
+    })
+  }
 }
 
 async function assetSettingsStruct() {
