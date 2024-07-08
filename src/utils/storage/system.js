@@ -1,8 +1,11 @@
 const fs = require('fs');
 const { plentySeasons } = require('../../../inputs/plenty-seasons.js');
-const { BEANWETH } = require('../../contracts/addresses.js');
+const { BEAN, BEANWETH, BEAN3CRV, UNRIPE_BEAN, UNRIPE_LP } = require('../../contracts/addresses.js');
 const { getActualActiveFertilizer, getActualFertilizedIndex, getActualUnfertilizedIndex, getClaimedFert } = require('../barn/barn-util.js');
 const { tokenEq } = require('../token.js');
+
+const WHITELISTED = [BEAN, BEANWETH, BEAN3CRV, UNRIPE_BEAN, UNRIPE_LP]; // TODO wsteth
+const WHITELISTED_LP = [BEANWETH, BEAN3CRV]; // TODO wsteth
 
 let BLOCK;
 let beanstalk;
@@ -17,12 +20,16 @@ async function systemStruct(options) {
   bs = options.bs;
 
   const [
+    paused,
+    pausedAt,
     soil,
     beanSown,
     beanWethSnapshot,
     beanWethTwaReserves,
     casesV2
   ] = await Promise.all([
+    bs.s.paused,
+    bs.s.pausedAt,
     bs.s.f.soil,
     bs.s.f.beanSown,
     bs.s.wellOracleSnapshots[BEANWETH],
@@ -59,19 +66,21 @@ async function systemStruct(options) {
   };
 
   // These are all 0 even for seasons in which a plenty did occur
-  const sops = (await Promise.all(
-    plentySeasons.map(async s => ([
-      [s], await bs.s.sops[s]
-    ]))
-  )).reduce((a, next) => {
-    a[next[0]] = next[1]
-    return a;
-  }, {});
+  const sops = {};
+  // const sops = (await Promise.all(
+  //   plentySeasons.map(async s => ([
+  //     [s], await bs.s.sops[s]
+  //   ]))
+  // )).reduce((a, next) => {
+  //   a[next[0]] = next[1]
+  //   return a;
+  // }, {});
 
   // I dont think these are necessary on migration ?
   const convertCapacity = {};
   const oracleImplementation = {};
   const shipmentRoutes = {};
+  const sop = {};
 
   const [
     silo,
@@ -82,8 +91,7 @@ async function systemStruct(options) {
     seedGauge,
     rain,
     migration,
-    seedGaugeSettings,
-    sop
+    seedGaugeSettings
   ] = await Promise.all([
     siloStruct(),
     fieldStruct(),
@@ -93,8 +101,7 @@ async function systemStruct(options) {
     seedGaugeStruct(),
     rainStruct(),
     migrationStruct(),
-    seedGaugeSettingsStruct(),
-    seasonOfPlentyStruct()
+    seedGaugeSettingsStruct()
   ]);
 
   const fields = {
@@ -102,16 +109,16 @@ async function systemStruct(options) {
   };
 
   return {
-    paused: false,
-    pausedAt: 0,
-    reentrantStatus: 0, // ?
-    isFarm: 0, // ?
+    paused,
+    pausedAt,
+    reentrantStatus: 0n, // ?
+    isFarm: 0n, // ?
     ownerCandidate: null, // address?
-    plenty: 0, // ?
+    plenty: 0n, // ?
     soil,
     beanSown,
-    activeField: 0,
-    fieldCount: 1,
+    activeField: 0n,
+    fieldCount: 1n,
     // bytes32[16] _buffer_0;
     podListings,
     podOrders,
@@ -140,6 +147,51 @@ async function systemStruct(options) {
 
 async function siloStruct() {
   console.log('Gathering silo info...');
+  const [
+    stalk,
+    roots,
+    earnedBeans
+  ] = await Promise.all([
+    bs.s.s.stalk,
+    bs.s.s.roots,
+    bs.s.earnedBeans
+  ]);
+  const balances = {};
+  const assetSilos = await Promise.all(WHITELISTED.map(assetSiloStruct));
+  for (let i = 0; i < assetSilos.length; ++i) {
+    balances[WHITELISTED[i]] = assetSilos[i];
+  }
+
+  const assetSettings = {};
+  const settingsStructs = await Promise.all(WHITELISTED.map(assetSettingsStruct));
+  for (let i = 0; i < settingsStructs.length; ++i) {
+    assetSettings[WHITELISTED[i]] = settingsStructs[i];
+  }
+
+  const [
+    unripeSettings,
+    whitelistStatuses,
+    germinating,
+    unclaimedGerminating
+  ] = await Promise.all([
+    unripeSettingsStructs(),
+    whitelistStatusStructs(),
+    germinatingMapping(),
+    unclaimedGerminatingMapping()
+  ]);
+
+  return {
+    stalk,
+    roots,
+    earnedBeans,
+    balances,
+    assetSettings,
+    unripeSettings,
+    whitelistStatuses,
+    germinating,
+    unclaimedGerminating
+    // bytes32[8] _buffer;
+  }
 }
 
 async function fieldStruct() {
@@ -313,7 +365,6 @@ async function rainStruct() {
 }
 
 async function assetSiloStruct(token) {
-  console.log('Gathering asset silo info (${token})...');
   const [
     deposited,
     depositedBdv
@@ -330,10 +381,8 @@ async function assetSiloStruct(token) {
 }
 
 async function whitelistStatusStructs() {
-  console.log('Gathering whitelist info...');
   const whitelistStatuses = [];
-  // 6 whitelisted tokens
-  for (let i = 0; i < 6; ++i) {
+  for (let i = 0; i < WHITELISTED.length; ++i) {
     const [
       token,
       isWhitelisted,
@@ -355,12 +404,66 @@ async function whitelistStatusStructs() {
   }
 }
 
-async function assetSettingsStruct() {
-
+async function assetSettingsStruct(token) {
+  const [
+    selector,
+    stalkEarnedPerSeason,
+    stalkIssuedPerBdv,
+    milestoneSeason,
+    milestoneStem,
+    encodeType,
+    deltaStalkEarnedPerSeason,
+    gaugePoints,
+    optimalPercentDepositedBdv
+  ] = await Promise.all([
+    bs.s.ss[token].selector,
+    bs.s.ss[token].stalkEarnedPerSeason,
+    bs.s.ss[token].stalkIssuedPerBdv,
+    bs.s.ss[token].milestoneSeason,
+    bs.s.ss[token].milestoneStem,
+    bs.s.ss[token].encodeType,
+    bs.s.ss[token].deltaStalkEarnedPerSeason,
+    bs.s.ss[token].gaugePoints,
+    bs.s.ss[token].optimalPercentDepositedBdv
+  ]);
+  return {
+    selector,
+    stalkEarnedPerSeason,
+    stalkIssuedPerBdv,
+    milestoneSeason,
+    milestoneStem,
+    encodeType,
+    deltaStalkEarnedPerSeason,
+    gaugePoints,
+    optimalPercentDepositedBdv,
+    gaugePointImplementation: null,
+    liquidityWeightImplementation: null,
+    oracleImplementation: null
+  }
 }
 
-async function unripeSettingsStruct() {
-
+async function unripeSettingsStructs() {
+  const [
+    urbeanUnderlyingToken,
+    urbeanBalanceOfUnderlying,
+    urlpUnderlyingToken,
+    urlpBalanceOfUnderlying
+  ] = await Promise.all([
+    bs.s.u[UNRIPE_BEAN].underlyingToken,
+    bs.s.u[UNRIPE_BEAN].balanceOfUnderlying,
+    bs.s.u[UNRIPE_LP].underlyingToken,
+    bs.s.u[UNRIPE_LP].balanceOfUnderlying
+  ]);
+  return {
+    [UNRIPE_BEAN]: {
+      underlyingToken: urbeanUnderlyingToken,
+      balanceOfUnderlying: urbeanBalanceOfUnderlying
+    },
+    [UNRIPE_LP]: {
+      underlyingToken: urlpUnderlyingToken,
+      balanceOfUnderlying: urlpBalanceOfUnderlying
+    }
+  };
 }
 
 async function twaReservesStruct(pool) {
@@ -374,16 +477,57 @@ async function twaReservesStruct(pool) {
   };
 }
 
-async function depositedStruct() {
-
+async function germinatingMapping() {
+  const oddResults = await Promise.all(WHITELISTED.map(async (token) => ({
+    token,
+    amount: await bs.s.oddGerminating.deposited[token].amount,
+    bdv: await bs.s.oddGerminating.deposited[token].bdv,
+  })));
+  const evenResults = await Promise.all(WHITELISTED.map(async (token) => ({
+    token,
+    amount: await bs.s.evenGerminating.deposited[token].amount,
+    bdv: await bs.s.evenGerminating.deposited[token].bdv,
+  })));
+  const reducer = (a, next) => {
+    a[next.token] = {
+      amount: next.amount,
+      bdv: next.bdv
+    };
+    return a;
+  };
+  return {
+    0: oddResults.reduce(reducer, {}),
+    1: evenResults.reduce(reducer, {}),
+  }
 }
 
 async function convertCapacityStruct() {
 
 }
 
-async function germinatingSiloStruct() {
+async function unclaimedGerminatingMapping() {
+  // Enumerate all seasons since seedgauge deployment and save those which have unclaimed germinating
+  const startSeason = 21797;
+  const currentSeason = Number(await bs.s.season.current);
 
+  const unclaimedGerminating = {};
+  const promiseGenerators = [];
+  for (let i = startSeason; i <= currentSeason; ++i) {
+    promiseGenerators.push(async () => {
+      const [stalk, roots] = await Promise.all([bs.s.unclaimedGerminating[i].stalk, bs.s.unclaimedGerminating[i].roots]);
+      if (stalk !== 0n) {
+        unclaimedGerminating[i] = {
+          stalk,
+          roots
+        };
+      }
+    });
+  }
+
+  while (promiseGenerators.length > 0) {
+    await Promise.all(promiseGenerators.splice(0, Math.min(50, promiseGenerators.length)).map(p => p()));
+  }
+  return unclaimedGerminating;
 }
 
 async function shipmentRouteStruct() {
@@ -391,19 +535,33 @@ async function shipmentRouteStruct() {
 }
 
 async function migrationStruct() {
-
+  // TODO: set this according to total supply minus beanstalk/beaneth/bean3crv/beanwsteth
+  return {
+    migratedL1Beans: 0n,
+    // bytes32[4] _buffer_;
+  };
 }
 
 async function implementationStruct() {
-
+  
 }
 
 async function seedGaugeSettingsStruct() {
-
-}
-
-async function seasonOfPlentyStruct() {
-
+  // TODO: these should be set to something
+  return {
+    maxBeanMaxLpGpPerBdvRatio: 0n,
+    minBeanMaxLpGpPerBdvRatio: 0n,
+    targetSeasonsToCatchUp: 0n,
+    podRateLowerBound: 0n,
+    podRateOptimal: 0n,
+    podRateUpperBound: 0n,
+    deltaPodDemandLowerBound: 0n,
+    deltaPodDemandUpperBound: 0n,
+    lpToSupplyRatioUpperBound: 0n,
+    lpToSupplyRatioOptimal: 0n,
+    lpToSupplyRatioLowerBound: 0n,
+    excessivePriceThreshold: 0n
+  }
 }
 
 const GerminationSideEnum = {
