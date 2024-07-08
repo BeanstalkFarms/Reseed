@@ -1,8 +1,13 @@
 const fs = require('fs');
 const readline = require('readline');
+const { BEANSTALK } = require('./contracts/addresses.js');
 const { asyncFertContractGetter } = require('./contracts/contract.js');
 const { bigintDecimal } = require('./utils/json-formatter.js');
 const retryable = require('./utils/retryable.js');
+const storageLayout = require('./contracts/abi/storageLayout.json');
+const ContractStorage = require('@beanstalk/contract-storage');
+const { providerThenable } = require('./contracts/provider.js');
+const { getActualFertilizedIndex } = require('./utils/barn/barn-util.js');
 
 const BATCH_SIZE = 100;
 let BLOCK;
@@ -51,6 +56,7 @@ async function exportFert(block) {
 
   BLOCK = block;
   fert = await asyncFertContractGetter();
+  bs = new ContractStorage(await providerThenable, BEANSTALK, storageLayout, BLOCK);
 
   console.log('Checking Fert balances...');
 
@@ -81,6 +87,7 @@ async function exportFert(block) {
   }
 
   balances.totals = {
+    sumClaimed: await getActualFertilizedIndex(bs) - sumRinsable,
     sumRinsable,
     sumUnrinsable
   };

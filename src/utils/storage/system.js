@@ -1,12 +1,15 @@
 const fs = require('fs');
 const { plentySeasons } = require('../../../inputs/plenty-seasons.js');
 const { BEANWETH } = require('../../contracts/addresses.js');
+const { getActualActiveFertilizer, getActualFertilizedIndex, getActualUnfertilizedIndex, getClaimedFert } = require('../barn/barn-util.js');
 
 let BLOCK;
 let beanstalk;
 let bs;
 
 async function systemStruct(options) {
+
+  console.log('Gathering system info...');
 
   BLOCK = options.block;
   beanstalk = options.beanstalk;
@@ -164,9 +167,9 @@ async function fertilizerStruct() {
     bpf,
     recapitalized
   ] = await Promise.all([
-    bs.s.activeFertilizer,
-    bs.s.fertilizedIndex,
-    bs.s.unfertilizedIndex,
+    getActualActiveFertilizer(bs),
+    getActualFertilizedIndex(bs),
+    getActualUnfertilizedIndex(bs),
     bs.s.fFirst,
     bs.s.fLast,
     bs.s.bpf,
@@ -175,7 +178,7 @@ async function fertilizerStruct() {
 
   const fertilizer = {};
   const nextFid = {};
-  const current = fertFirst;
+  let current = fertFirst;
   while (current != BigInt(0)) {
     const [amount, next] = await Promise.all([bs.s.fertilizer[current], bs.s.nextFid[current]]);
     fertilizer[current] = amount;
@@ -191,13 +194,14 @@ async function fertilizerStruct() {
     activeFertilizer,
     fertilizedIndex,
     unfertilizedIndex,
-    fertilizedPaidIndex: fertilizedIndex, // TODO: this is the amount that has been rinsed
+    fertilizedPaidIndex: getClaimedFert(BLOCK),
     fertFirst,
     fertLast,
     bpf,
     recapitalized,
     // Amount of beans shipped to fert but unpaid due to not being proportional to active fert. previously untracked
     leftoverBeans: 0
+    // bytes32[8] _buffer;
   }
 }
 

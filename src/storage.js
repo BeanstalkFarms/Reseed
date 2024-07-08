@@ -1,5 +1,5 @@
 const fs = require('fs');
-const { BEANSTALK, BEAN, UNRIPE_BEAN, UNRIPE_LP, BEAN3CRV, BEANWETH } = require('./contracts/addresses.js');
+const { BEANSTALK } = require('./contracts/addresses.js');
 const { providerThenable } = require('./contracts/provider.js');
 const { tokenEq } = require('./utils/token.js');
 const { bigintHex, bigintDecimal } = require('./utils/json-formatter.js');
