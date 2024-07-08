@@ -1,3 +1,7 @@
+const fs = require('fs');
+const { plentySeasons } = require('../../../inputs/plenty-seasons.js');
+const { BEANWETH } = require('../../contracts/addresses.js');
+
 let BLOCK;
 let beanstalk;
 let bs;
@@ -8,15 +12,66 @@ async function systemStruct(options) {
   beanstalk = options.beanstalk;
   bs = options.bs;
 
-  const [soil, beansSown, casesV2] = await Promise.all([
+  const [
+    soil,
+    beanSown,
+    beanWethSnapshot,
+    beanWethTwaReserves,
+    casesV2
+  ] = await Promise.all([
     bs.s.f.soil,
-    bs.s.f.beansSown,
-    bs.s.casesV2
+    bs.s.f.beanSown,
+    bs.s.wellOracleSnapshots[BEANWETH],
+    twaReservesStruct(BEANWETH),
+    bs.s.deprecated2// bs.s.casesV2 TODO: using shorter array because its faster for testing
   ]);
+
+
+  const market = JSON.parse(fs.readFileSync(`results/market${BLOCK}.json`));
+  const podListings = {
+    0: {}
+  }
+  const podOrders = {};
+  for (const listIndex in market.listings.beanstalk3) {
+    podListings[0][listIndex] = market.listings.beanstalk3[listIndex];
+  }
+  for (const orderId in market.orders.beanstalk3) {
+    podOrders[orderId] = market.orders.beanstalk3[orderId];
+  }
+
+  const wellOracleSnapshots = {
+    [BEANWETH]: beanWethSnapshot
+    // TODO: BEANwstETH
+  };
+
+  const twaReserves = {
+    [BEANWETH]: beanWethTwaReserves
+    // TODO: BEANwstETH
+  };
+
+  const usdTokenPrice = {
+    [BEANWETH]: 1
+    // TODO: BEANwstETH?
+  };
+
+  // These are all 0 even for seasons in which a plenty did occur
+  const sops = (await Promise.all(
+    plentySeasons.map(async s => ([
+      [s], await bs.s.sops[s]
+    ]))
+  )).reduce((a, next) => {
+    a[next[0]] = next[1]
+    return a;
+  }, {});
+
+  // I dont think these are necessary on migration ?
+  const convertCapacity = {};
+  const oracleImplementation = {};
+  const shipmentRoutes = {};
 
   const [
     silo,
-    field,
+    field0,
     fert,
     season,
     weather,
@@ -38,6 +93,10 @@ async function systemStruct(options) {
     seasonOfPlentyStruct()
   ]);
 
+  const fields = {
+    0: field0
+  };
+
   return {
     paused: false,
     pausedAt: 0,
@@ -46,16 +105,16 @@ async function systemStruct(options) {
     ownerCandidate: null, // address?
     plenty: 0, // ?
     soil,
-    beansSown,
+    beanSown,
     activeField: 0,
     fieldCount: 1,
     // bytes32[16] _buffer_0;
     podListings,
     podOrders,
-    internalTokenBalanceTotal,
+    // internalTokenBalanceTotal, // TODO: requires knowing the token address on l2 (if its available on l2)
     wellOracleSnapshots,
     twaReserves,
-    usdTokenPrice: {}, // ?
+    usdTokenPrice,
     sops,
     fields,
     convertCapacity,
@@ -64,7 +123,6 @@ async function systemStruct(options) {
     // bytes32[16] _buffer_1;
     casesV2,
     silo,
-    field,
     fert,
     season,
     weather,
@@ -77,15 +135,70 @@ async function systemStruct(options) {
 }
 
 async function siloStruct() {
-
+  console.log('Gathering silo info...');
 }
 
 async function fieldStruct() {
-
+  console.log('Gathering field info...');
+  const [pods, harvested, harvestable] = await Promise.all([
+    bs.s.f.pods,
+    bs.s.f.harvested,
+    bs.s.f.harvestable
+  ]);
+  return {
+    pods,
+    harvested,
+    harvestable
+    // bytes32[8] _buffer;
+  }
 }
 
 async function fertilizerStruct() {
+  console.log('Gathering fertilizer info...');
+  const [
+    activeFertilizer,
+    fertilizedIndex,
+    unfertilizedIndex,
+    fertFirst,
+    fertLast,
+    bpf,
+    recapitalized
+  ] = await Promise.all([
+    bs.s.activeFertilizer,
+    bs.s.fertilizedIndex,
+    bs.s.unfertilizedIndex,
+    bs.s.fFirst,
+    bs.s.fLast,
+    bs.s.bpf,
+    bs.s.recapitalized
+  ]);
 
+  const fertilizer = {};
+  const nextFid = {};
+  const current = fertFirst;
+  while (current != BigInt(0)) {
+    const [amount, next] = await Promise.all([bs.s.fertilizer[current], bs.s.nextFid[current]]);
+    fertilizer[current] = amount;
+    if (next !== BigInt(0)) {
+      nextFid[current] = next;
+    }
+    current = next;
+  }
+
+  return {
+    fertilizer,
+    nextFid,
+    activeFertilizer,
+    fertilizedIndex,
+    unfertilizedIndex,
+    fertilizedPaidIndex: fertilizedIndex, // TODO: this is the amount that has been rinsed
+    fertFirst,
+    fertLast,
+    bpf,
+    recapitalized,
+    // Amount of beans shipped to fert but unpaid due to not being proportional to active fert. previously untracked
+    leftoverBeans: 0
+  }
 }
 
 async function seasonStruct() {
@@ -120,8 +233,15 @@ async function unripeSettingsStruct() {
 
 }
 
-async function twaReservesStruct() {
-
+async function twaReservesStruct(pool) {
+  const [reserve0, reserve1] = await Promise.all([
+    bs.s.twaReserves[BEANWETH].reserve0,
+    bs.s.twaReserves[BEANWETH].reserve1
+  ]);
+  return {
+    reserve0,
+    reserve1
+  };
 }
 
 async function depositedStruct() {

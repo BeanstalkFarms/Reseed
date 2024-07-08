@@ -20,11 +20,16 @@ async function exportStorage(block) {
   beanstalk = await asyncBeanstalkContractGetter();
   bs = new ContractStorage(await providerThenable, BEANSTALK, storageLayout, BLOCK);
 
-  systemStruct({
+  const system = await systemStruct({
     block: BLOCK,
     beanstalk,
     bs
   });
+
+  const outFile = `results/storage${BLOCK}.json`;
+  await fs.promises.writeFile(outFile, JSON.stringify(system, bigintHex, 2));
+
+  console.log(`\rWrote system storage to ${outFile}`);
 
 }
 

@@ -5,10 +5,11 @@
     "silo": "node src/main.js silo",
     "field": "node src/main.js field",
     "barn": "node src/main.js barn",
-    "market": "node src/main.js market"
+    "market": "node src/main.js market",
+    "storage": "node src/main.js storage"
   },
   "dependencies": {
-    "@beanstalk/contract-storage": "^1.0.1",
+    "@beanstalk/contract-storage": "^1.1.0",
     "alchemy-sdk": "^3.3.1",
     "dotenv": "^16.3.1",
     "ethers": "^6.10.0",
