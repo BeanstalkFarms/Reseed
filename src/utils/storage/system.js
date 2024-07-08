@@ -80,7 +80,7 @@ async function systemStruct(options) {
   // I dont think these are necessary on migration ?
   const convertCapacity = {};
   const oracleImplementation = {};
-  const shipmentRoutes = {};
+  const shipmentRoutes = [];
   const sop = {};
 
   const [
@@ -110,7 +110,7 @@ async function systemStruct(options) {
   };
 
   return {
-    paused,
+    paused: BigInt(paused),
     pausedAt,
     reentrantStatus: 0n, // ?
     isFarm: 0n, // ?
@@ -403,6 +403,7 @@ async function whitelistStatusStructs() {
       isSoppable: tokenEq(token, BEANWETH) // TODO: how to determine which one is soppable?
     })
   }
+  return whitelistStatuses;
 }
 
 async function assetSettingsStruct(token) {
