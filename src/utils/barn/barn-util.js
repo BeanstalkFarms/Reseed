@@ -14,14 +14,20 @@ async function getActualUnfertilizedIndex(bs) {
   return await bs.s.unfertilizedIndex - (BigInt(882) - BigInt(147) * await bs.s.bpf);
 }
 
-function getClaimedFert(block) {
+function getRinsableSprouts(block) {
   const fertData = JSON.parse(fs.readFileSync(`results/fert${block}.json`));
-  return fertData.totals.sumClaimed;
+  return BigInt(fertData.totals.sumRinsable);
+}
+
+function getClaimedSprouts(block) {
+  const fertData = JSON.parse(fs.readFileSync(`results/fert${block}.json`));
+  return BigInt(fertData.totals.sumClaimed);
 }
 
 module.exports = {
   getActualActiveFertilizer,
   getActualFertilizedIndex,
   getActualUnfertilizedIndex,
-  getClaimedFert
+  getRinsableSprouts,
+  getClaimedSprouts
 }
