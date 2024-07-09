@@ -305,8 +305,9 @@ async function checkWallet(results, deposits, depositor) {
     results[depositor].breakdown[token] = netTokenStalk;
   }
 
+  const contractStalk = await getContractStalk(depositor);
   results[depositor].depositStalk = netDepositorStalk;
-  results[depositor].contractStalk = await getContractStalk(depositor);
+  results[depositor].contractStalk = contractStalk.sum;
   results[depositor].discrepancy = results[depositor].depositStalk - results[depositor].contractStalk;
 
   if (Object.values(deposits[depositor].totals).some(v => v.seeds > 0n)) {
@@ -319,15 +320,8 @@ async function checkWallet(results, deposits, depositor) {
   }
 
   // Write total stalk/germinating to the deposits object so it can be available in a single file
-  const [oddGerm, evenGerm] = await Promise.all([
-    bs.s.a[depositor].farmerGerminating.odd,
-    bs.s.a[depositor].farmerGerminating.even
-  ]);
+  deposits[depositor].totals.stalkNotGerminating = netDepositorStalk - contractStalk.germinating;
   deposits[depositor].totals.stalkInclGerminating = netDepositorStalk;
-  deposits[depositor].totals.germinating = {
-    odd: oddGerm,
-    even: evenGerm
-  };
 
   netSystemStalk += netDepositorStalk;
   netSystemMownStalk += netDepositorMownStalk;
@@ -361,7 +355,13 @@ async function getContractStalk(account) {
       }
     })
   ]);
-  return storage + earned + germinating + doneGerminating;
+  return {
+    storage,
+    earned,
+    germinating,
+    doneGerminating,
+    sun: storage + earned + germinating + doneGerminating
+  }
 }
 
 async function getSystemGerminating() {

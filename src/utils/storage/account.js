@@ -26,7 +26,7 @@ async function allAccountStructs(options) {
 
   const accountsStorage = {}; 
   while (promiseGenerators.length > 0) {
-    const results = await Promise.all(promiseGenerators.splice(0, Math.min(100, promiseGenerators.length)).map(p => p()));
+    const results = await Promise.all(promiseGenerators.splice(0, Math.min(50, promiseGenerators.length)).map(p => p()));
     for (const result of results) {
       accountsStorage[result.input] = result.output;
     }
@@ -46,9 +46,11 @@ async function accountStruct(account) {
     bs.s.a[account].lastRain
   ]);
 
+  
+
   return {
     roots,
-    stalk,
+    stalk, // allDeposits[account].totals.,
     depositPermitNonces: 0n,
     tokenPermitNonces: 0n,
     lastUpdate,
@@ -65,8 +67,15 @@ async function accountStruct(account) {
     germinatingStalk,
     internalTokenBalance,
     // bytes32[16] _buffer_1,
-    sop
+    sop: {} // assumption being it doesnt sop before l2 migration
   }
+}
+
+async function germinatingMapping(account) {
+  // const [oddGerm, evenGerm] = await Promise.all([
+  //   bs.s.a[depositor].farmerGerminating.odd,
+  //   bs.s.a[depositor].farmerGerminating.even
+  // ]);
 }
 
 module.exports = {
