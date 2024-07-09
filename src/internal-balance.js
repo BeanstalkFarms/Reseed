@@ -15,8 +15,6 @@ async function exportInternalBalances(block) {
   BLOCK = block;
   bs = new ContractStorage(await providerThenable, BEANSTALK, storageLayout, BLOCK);
 
-  // Main logic is TODO
-
   const reducer = (a, next) => {
     for (token in next) {
       a[token] = (a[token] ?? 0n) + next[token];
@@ -26,7 +24,6 @@ async function exportInternalBalances(block) {
 
   const currentInternalBalances = await getCurrentInternalBalances();
   const balancesByToken = Object.values(currentInternalBalances).reduce(reducer, {});
-  console.log(balancesByToken);
   
   // Calcualte withdrawal amounts
   const withdrawals = await getWithdrawals();
@@ -38,7 +35,11 @@ async function exportInternalBalances(block) {
     }
   }
 
-  // Add withdrawals into internal balances
+  // Calculate unpicked unripe amounts
+
+  // Add withdrawals/unpicked into internal balances
+
+  // Scale lp token amounts according to the amount minted on l2
 }
 
 async function getCurrentInternalBalances() {

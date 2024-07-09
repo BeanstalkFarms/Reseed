@@ -372,9 +372,6 @@ async function assetSiloStruct(token) {
   ] = await Promise.all([
     bs.s.siloBalances[token].deposited,
     bs.s.siloBalances[token].depositedBdv
-    // TODO: what to do with withdrawn? These corresponding assets should be put into user internal balances
-    // Would also be good to verify this against the sum of all user withdrawn amounts
-    // bs.s.siloBalances[token].withdrawn
   ]);
   return {
     deposited,
