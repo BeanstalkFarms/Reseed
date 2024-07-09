@@ -8,6 +8,7 @@ const retryable = require('./utils/retryable.js');
 const storageLayout = require('./contracts/abi/storageLayout.json');
 const ContractStorage = require('@beanstalk/contract-storage');
 const { systemStruct } = require('./utils/storage/system.js');
+const { allAccountStructs } = require('./utils/storage/account.js');
 
 let BLOCK;
 let beanstalk;
@@ -20,16 +21,26 @@ async function exportStorage(block) {
   beanstalk = await asyncBeanstalkContractGetter();
   bs = new ContractStorage(await providerThenable, BEANSTALK, storageLayout, BLOCK);
 
-  const system = await systemStruct({
+  // const system = await systemStruct({
+  //   block: BLOCK,
+  //   bs
+  // });
+
+  // // Consider combining into a single out file?
+  // const systemOutFile = `results/storage-system${BLOCK}.json`;
+  // await fs.promises.writeFile(systemOutFile, JSON.stringify(system, bigintHex, 2));
+
+  // console.log(`\rWrote system storage to ${systemOutFile}`);
+
+  const accounts = await allAccountStructs({
     block: BLOCK,
-    beanstalk,
     bs
   });
 
-  const outFile = `results/storage${BLOCK}.json`;
-  await fs.promises.writeFile(outFile, JSON.stringify(system, bigintHex, 2));
+  const accountOutFile = `results/storage-accounts${BLOCK}.json`;
+  await fs.promises.writeFile(accountOutFile, JSON.stringify(accounts, bigintHex, 2));
 
-  console.log(`\rWrote system storage to ${outFile}`);
+  console.log(`\rWrote account storage to ${accountOutFile}`);
 
 }
 

@@ -9,7 +9,6 @@ const WHITELISTED = [BEAN, BEANWETH, BEAN3CRV, UNRIPE_BEAN, UNRIPE_LP]; // TODO 
 const WHITELISTED_LP = [BEANWETH, BEAN3CRV]; // TODO wsteth
 
 let BLOCK;
-let beanstalk;
 let bs;
 
 async function systemStruct(options) {
@@ -17,7 +16,6 @@ async function systemStruct(options) {
   console.log('Gathering system info...');
 
   BLOCK = options.block;
-  beanstalk = options.beanstalk;
   bs = options.bs;
 
   const [
@@ -120,7 +118,7 @@ async function systemStruct(options) {
     beanSown,
     activeField: 0n,
     fieldCount: 1n,
-    // bytes32[16] _buffer_0;
+    // bytes32[16] _buffer_0,
     podListings,
     podOrders,
     // TODO: this also needs to include internal balances from withdrawn assets
@@ -133,7 +131,7 @@ async function systemStruct(options) {
     convertCapacity,
     oracleImplementation,
     shipmentRoutes,
-    // bytes32[16] _buffer_1;
+    // bytes32[16] _buffer_1,
     casesV2,
     silo,
     fert,
@@ -192,7 +190,7 @@ async function siloStruct() {
     whitelistStatuses,
     germinating,
     unclaimedGerminating
-    // bytes32[8] _buffer;
+    // bytes32[8] _buffer
   }
 }
 
@@ -207,7 +205,7 @@ async function fieldStruct() {
     pods,
     harvested,
     harvestable
-    // bytes32[8] _buffer;
+    // bytes32[8] _buffer
   }
 }
 
@@ -256,7 +254,7 @@ async function fertilizerStruct() {
     recapitalized,
     // Amount of beans shipped to fert but unpaid due to not being proportional to active fert. previously untracked
     leftoverBeans: 0n
-    // bytes32[8] _buffer;
+    // bytes32[8] _buffer
   }
 }
 
@@ -308,7 +306,7 @@ async function seasonStruct() {
     start,
     period,
     timestamp
-    // bytes32[8] _buffer;
+    // bytes32[8] _buffer
   }
 }
 
@@ -330,7 +328,7 @@ async function weatherStruct() {
     lastSowTime,
     thisSowTime,
     temp
-    // bytes32[8] _buffer;
+    // bytes32[8] _buffer
   }
 }
 
@@ -346,7 +344,7 @@ async function seedGaugeStruct() {
   return {
     averageGrownStalkPerBdvPerSeason,
     beanToMaxLpGpPerBdvRatio
-    // bytes32[8] _buffer;
+    // bytes32[8] _buffer
   }
 }
 
@@ -362,7 +360,7 @@ async function rainStruct() {
   return {
     pods,
     roots
-    // bytes32[8] _buffer;
+    // bytes32[8] _buffer
   }
 }
 
@@ -542,7 +540,7 @@ async function migrationStruct() {
   // TODO: BEANwstETH
   return {
     migratedL1Beans: totalSupply - beanstalkBalance - beanethBalance - bean3crvBalance /*- beanwstethBalance*/,
-    // bytes32[4] _buffer_;
+    // bytes32[4] _buffer_
   };
 }
 
