@@ -123,7 +123,8 @@ async function systemStruct(options) {
     // bytes32[16] _buffer_0;
     podListings,
     podOrders,
-    // internalTokenBalanceTotal, // TODO: requires knowing the token address on l2 (if its available on l2)
+    // TODO: this also needs to include internal balances from withdrawn assets
+    // internalTokenBalanceTotal,
     wellOracleSnapshots,
     twaReserves,
     usdTokenPrice,
@@ -373,6 +374,7 @@ async function assetSiloStruct(token) {
     bs.s.siloBalances[token].deposited,
     bs.s.siloBalances[token].depositedBdv
     // TODO: what to do with withdrawn? These corresponding assets should be put into user internal balances
+    // Would also be good to verify this against the sum of all user withdrawn amounts
     // bs.s.siloBalances[token].withdrawn
   ]);
   return {
