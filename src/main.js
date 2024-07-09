@@ -1,5 +1,6 @@
 const { exportFert } = require("./barn");
 const { exportPlots } = require("./field");
+const { exportInternalBalances } = require("./internal-balance");
 const { exportMarket } = require("./market");
 const { exportDeposits } = require("./silo");
 const { exportStorage } = require("./storage");
@@ -33,6 +34,9 @@ const { exportStorage } = require("./storage");
       break;
     case 'market':
       await exportMarket(block);
+      break;
+    case 'balances':
+      await exportInternalBalances(block);
       break;
     case 'storage':
       await exportStorage(block);

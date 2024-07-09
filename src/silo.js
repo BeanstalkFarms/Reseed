@@ -1,6 +1,6 @@
 const fs = require('fs');
 const readline = require('readline');
-const { BEANSTALK, BEAN, UNRIPE_BEAN, UNRIPE_LP, BEAN3CRV, BEANWETH } = require('./contracts/addresses.js');
+const { BEANSTALK, BEAN, UNRIPE_BEAN, UNRIPE_LP, BEANWETH } = require('./contracts/addresses.js');
 const { providerThenable, localProvider } = require('./contracts/provider');
 const { tokenEq } = require('./utils/token.js');
 const { bigintHex, bigintDecimal } = require('./utils/json-formatter.js');
