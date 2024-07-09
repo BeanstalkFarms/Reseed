@@ -252,7 +252,7 @@ async function checkWallet(results, deposits, depositor) {
     netDepositorStalk += netTokenStalk;
     netDepositorMownStalk += netTokenMownStalk;
     results[depositor].breakdown[token] = netTokenStalk;
-    deposits[account].totals[token].mowStem = mowStem;
+    deposits[depositor].totals[token].mowStem = mowStem;
   }
 
   const contractStalk = await getContractStalk(depositor);

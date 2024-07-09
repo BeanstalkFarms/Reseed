@@ -6,6 +6,9 @@ let bs;
 
 let allDeposits;
 let allPlots;
+let allAccounts;
+
+let walletProgress = 0;
 
 async function allAccountStructs(options) {
 
@@ -18,7 +21,7 @@ async function allAccountStructs(options) {
   allDeposits = JSON.parse(fs.readFileSync(`results/deposits${BLOCK}.json`));
   allPlots = JSON.parse(fs.readFileSync(`results/pods${BLOCK}.json`));
 
-  const allAccounts = [...new Set([...Object.keys(allDeposits), ...Object.keys(allPlots)])];
+  allAccounts = [...new Set([...Object.keys(allDeposits), ...Object.keys(allPlots)])];
 
   const promiseGenerators = allAccounts.map(a => async () => ({
     input: a,
@@ -32,6 +35,7 @@ async function allAccountStructs(options) {
       accountsStorage[result.input] = result.output;
     }
   }
+  console.log('Finished accounts info');
   return accountsStorage;
 }
 
@@ -49,13 +53,15 @@ async function accountStruct(account) {
     germinatingMapping(account)
   ]);
 
-  const stalk = BigInt(allDeposits[account].totals.stalkNotGerminating);
+  const stalk = BigInt(allDeposits[account]?.totals.stalkNotGerminating ?? 0);
   const roots = stalk * BigInt(10 ** 12);
 
   const { deposits, depositIdList, mowStatuses } = getAccountSilo(account);
   const fields = {
     0: getAccountField(account)
   };
+
+  process.stdout.write(`\r${++walletProgress} / ${allAccounts.length}`);
   
   return {
     roots,
@@ -74,7 +80,8 @@ async function accountStruct(account) {
     mowStatuses,
     isApprovedForAll: {},
     germinatingStalk,
-    internalTokenBalance,
+    // TODO: this also needs to include internal balances from withdrawn assets
+    // internalTokenBalance,
     // bytes32[16] _buffer_1,
     sop: {} // assumption being it doesnt sop before l2 migration
   }
@@ -85,6 +92,9 @@ function getAccountSilo(account) {
   const depositIdList = {};
   const mowStatuses = {};
   for (const token in allDeposits[account]) {
+    if (token === 'totals') {
+      continue;
+    }
     if (!depositIdList[token]) {
       depositIdList[token] = [];
     }
@@ -115,7 +125,7 @@ function getAccountField(account) {
     plotIndexes: []
   };
   for (const index in allPlots[account]) {
-    field.plots[index] = BigInt(allPlots[account][index]);
+    field.plots[index] = BigInt(allPlots[account][index].amount);
     field.plotIndexes.push(BigInt(index));
   }
   return field;
