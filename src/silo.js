@@ -101,9 +101,14 @@ async function processLine(deposits, line) {
   let version = '';
 
   if (!stemTips[token]) {
-    stemTips[token] = await retryable(async () =>
-      BigInt(await beanstalk.callStatic.stemTipForToken(token, { blockTag: BLOCK }))
-    );
+    try {
+      stemTips[token] = await retryable(async () =>
+        BigInt(await beanstalk.callStatic.stemTipForToken(token, { blockTag: BLOCK }))
+      );
+    } catch (e) {
+      // stemTipForToken did not exist
+      stemTips[token] = seasonToStem(Number(await bs.s.season.current), getLegacySeedsPerToken(token))
+    }
   }
 
   if (stem !== '') {
@@ -240,13 +245,21 @@ async function checkWallet(results, deposits, depositor) {
     if (!deposits[depositor][BEAN]) {
       deposits[depositor][BEAN] = {};
     }
-    deposits[depositor][BEAN][stemTips[BEAN]] = {
-      amount: earnedBeans,
-      bdv: earnedBeans,
-      version: ['v3.1'],
-      stalk: earnedBeans * BigInt(10 ** 4),
-      stalkIfMown: earnedBeans * BigInt(10 ** 4)
-    };
+    if (!deposits[depositor][BEAN][stemTips[BEAN]]) {
+      deposits[depositor][BEAN][stemTips[BEAN]] = {
+        amount: earnedBeans,
+        bdv: earnedBeans,
+        version: ['v3.1'],
+        // Need to set stalk here since they necessarily have not mown on the current season
+        stalk: earnedBeans * BigInt(10 ** 4),
+        stalkIfMown: earnedBeans * BigInt(10 ** 4)
+      };
+    } else {
+      deposits[depositor][BEAN][stemTips[BEAN]].amount += earnedBeans;
+      deposits[depositor][BEAN][stemTips[BEAN]].bdv += earnedBeans;
+      deposits[depositor][BEAN][stemTips[BEAN]].version.push('v3.1');
+      // Don't need to set stalk here since they must have already mown this season
+    }
   }
   calcDepositTotals(depositor, deposits);
 
