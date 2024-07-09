@@ -15,15 +15,21 @@ async function exportInternalBalances(block) {
   bs = new ContractStorage(await providerThenable, BEANSTALK, storageLayout, BLOCK);
 
   // Main logic is TODO
-  
-  // Calcualte withdrawal amounts
-  const withdrawals = await getWithdrawals();
-  const withdrawalsByToken = Object.values(withdrawals).reduce((a, next) => {
+
+  const reducer = (a, next) => {
     for (token in next) {
       a[token] = (a[token] ?? 0n) + next[token];
     }
     return a;
-  }, {});
+  };
+
+  const currentInternalBalances = await getCurrentInternalBalances();
+  const balancesByToken = Object.values(currentInternalBalances).reduce(reducer, {});
+  console.log(balancesByToken);
+  
+  // Calcualte withdrawal amounts
+  const withdrawals = await getWithdrawals();
+  const withdrawalsByToken = Object.values(withdrawals).reduce(reducer, {});
 
   for (const token in withdrawalsByToken) {
     if (withdrawalsByToken[token] !== await bs.s.siloBalances[token].withdrawn) {
@@ -32,6 +38,39 @@ async function exportInternalBalances(block) {
   }
 
   // Add withdrawals into internal balances
+}
+
+async function getCurrentInternalBalances() {
+  const balancesData = fs.readFileSync(`inputs/internal-balances${BLOCK}.csv`, 'utf8');
+  const entries = balancesData.split('\n').slice(1);
+  const promiseGenerators = [];
+  for (const entry of entries) {
+    const [account, token] = entry.split(',');
+    if (account) {
+      promiseGenerators.push(async () => ({
+        account,
+        token,
+        amount: BigInt(await bs.s.internalTokenBalance[account][token])
+      }));
+    }
+  }
+
+  const internalTokenBalances = {};
+  while (promiseGenerators.length > 0) {
+    const results = await Promise.all(promiseGenerators.splice(0, Math.min(BATCH_SIZE, promiseGenerators.length)).map(p => p()));
+    for (const result of results) {
+      if (result.amount > 0n) {
+        if (!internalTokenBalances[result.account]) {
+          internalTokenBalances[result.account] = {};
+        }
+        if (!internalTokenBalances[result.account][result.token]) {
+          internalTokenBalances[result.account][result.token] = 0n;
+        }
+        internalTokenBalances[result.account][result.token] += result.amount;
+      }
+    }
+  }
+  return internalTokenBalances;
 }
 
 async function getWithdrawals() {

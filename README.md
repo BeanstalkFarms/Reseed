@@ -9,4 +9,5 @@ Silo Withdrawn: Dune query https://dune.com/queries/3906871
 Field: Plots will be automatically pulled from the subgraph and cached locally
 Barn: Dune query (must login as beanstalkfarmsteam) https://dune.com/queries/3899244
 Market: Listings/Orders automatically pulled from subgraph and cached locally
-Internal balances: https://dune.com/queries/3904657
+Internal balances (by account): https://dune.com/queries/3907145
+Internal balances (totals): https://dune.com/queries/3904657
