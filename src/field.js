@@ -6,6 +6,7 @@ const ContractStorage = require('@beanstalk/contract-storage');
 const { allPaginatedSG } = require('./utils/subgraph-paginate.js');
 const { beanstalkSG } = require('./contracts/subgraph-client.js');
 const { bigintDecimal } = require('./utils/json-formatter.js');
+const { runBatchPromises } = require('./utils/batch-promise.js');
 
 const BATCH_SIZE = 100;
 let BLOCK;
@@ -126,9 +127,7 @@ async function exportPlots(block) {
   // Check that each account owns each plot/amount
   const allPromiseGenerators = allPlots.map((plot) => () => checkPlot(plot));
   process.stdout.write(`\r0${' '.repeat(allPlots.length.toString().length - 1)} / ${allPlots.length}`);
-  while (allPromiseGenerators.length > 0) {
-    await Promise.all(allPromiseGenerators.splice(0, Math.min(BATCH_SIZE, allPromiseGenerators.length)).map(p => p()));
-  }
+  await runBatchPromises(allPromiseGenerators, BATCH_SIZE);
 
   console.log(`\rChecked ${checkProgress} assets`);
   

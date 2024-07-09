@@ -4,6 +4,7 @@ const { BEANSTALK, BEAN, BEANWETH, BEAN3CRV, UNRIPE_BEAN, UNRIPE_LP } = require(
 const { getActualActiveFertilizer, getActualFertilizedIndex, getActualUnfertilizedIndex, getClaimedSprouts } = require('../barn/barn-util.js');
 const { tokenEq } = require('../token.js');
 const { createAsyncERC20ContractGetter } = require('../../contracts/contract.js');
+const { runBatchPromises } = require('../batch-promise.js');
 
 const WHITELISTED = [BEAN, BEANWETH, BEAN3CRV, UNRIPE_BEAN, UNRIPE_LP]; // TODO wsteth
 const WHITELISTED_LP = [BEANWETH, BEAN3CRV]; // TODO wsteth
@@ -522,9 +523,7 @@ async function unclaimedGerminatingMapping() {
     });
   }
 
-  while (promiseGenerators.length > 0) {
-    await Promise.all(promiseGenerators.splice(0, Math.min(50, promiseGenerators.length)).map(p => p()));
-  }
+  await runBatchPromises(promiseGenerators, 50);
   return unclaimedGerminating;
 }
 

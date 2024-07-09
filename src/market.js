@@ -7,6 +7,7 @@ const ContractStorage = require('@beanstalk/contract-storage');
 const { allPaginatedSG } = require('./utils/subgraph-paginate.js');
 const { beanstalkSG } = require('./contracts/subgraph-client.js');
 const { bigintHex } = require('./utils/json-formatter.js');
+const { runBatchPromises } = require('./utils/batch-promise.js');
 
 const BATCH_SIZE = 100;
 let BLOCK;
@@ -188,9 +189,7 @@ async function exportMarket(block) {
 
   const total = allMarket.listings.length + allMarket.orders.length;
   process.stdout.write(`\r0${' '.repeat((total).toString().length - 1)} / ${total}`);
-  while (allPromiseGenerators.length > 0) {
-    await Promise.all(allPromiseGenerators.splice(0, Math.min(BATCH_SIZE, allPromiseGenerators.length)).map(p => p()));
-  }
+  await runBatchPromises(allPromiseGenerators, BATCH_SIZE);
 
   console.log(`\rChecked ${checkProgress} listings/orders`);
 

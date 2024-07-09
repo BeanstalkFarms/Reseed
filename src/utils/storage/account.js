@@ -1,5 +1,6 @@
 const fs = require('fs');
 const { packAddressAndStem } = require('../silo/silo-util');
+const { runBatchPromises } = require('../batch-promise');
 
 let BLOCK;
 let bs;
@@ -28,13 +29,10 @@ async function allAccountStructs(options) {
     output: await accountStruct(a)
   }));
 
-  const accountsStorage = {}; 
-  while (promiseGenerators.length > 0) {
-    const results = await Promise.all(promiseGenerators.splice(0, Math.min(50, promiseGenerators.length)).map(p => p()));
-    for (const result of results) {
-      accountsStorage[result.input] = result.output;
-    }
-  }
+  const accountsStorage = {};
+  await runBatchPromises(promiseGenerators, 50, (result) => {
+    accountsStorage[result.input] = result.output;
+  });
   console.log('Finished accounts info');
   return accountsStorage;
 }

@@ -3,6 +3,7 @@ const { BEANSTALK } = require('./contracts/addresses.js');
 const { providerThenable } = require('./contracts/provider');
 const storageLayout = require('./contracts/abi/storageLayout.json');
 const ContractStorage = require('@beanstalk/contract-storage');
+const { runBatchPromises } = require('./utils/batch-promise.js');
 
 const BATCH_SIZE = 100;
 let BLOCK;
@@ -56,20 +57,17 @@ async function getCurrentInternalBalances() {
   }
 
   const internalTokenBalances = {};
-  while (promiseGenerators.length > 0) {
-    const results = await Promise.all(promiseGenerators.splice(0, Math.min(BATCH_SIZE, promiseGenerators.length)).map(p => p()));
-    for (const result of results) {
-      if (result.amount > 0n) {
-        if (!internalTokenBalances[result.account]) {
-          internalTokenBalances[result.account] = {};
-        }
-        if (!internalTokenBalances[result.account][result.token]) {
-          internalTokenBalances[result.account][result.token] = 0n;
-        }
-        internalTokenBalances[result.account][result.token] += result.amount;
+  await runBatchPromises(promiseGenerators, BATCH_SIZE, (result) => {
+    if (result.amount > 0n) {
+      if (!internalTokenBalances[result.account]) {
+        internalTokenBalances[result.account] = {};
       }
+      if (!internalTokenBalances[result.account][result.token]) {
+        internalTokenBalances[result.account][result.token] = 0n;
+      }
+      internalTokenBalances[result.account][result.token] += result.amount;
     }
-  }
+  });
   return internalTokenBalances;
 }
 
@@ -92,20 +90,17 @@ async function getWithdrawals() {
 
   // Find withdrawn amounts on the account/token level
   const withdrawals = {};
-  while (promiseGenerators.length > 0) {
-    const results = await Promise.all(promiseGenerators.splice(0, Math.min(BATCH_SIZE, promiseGenerators.length)).map(p => p()));
-    for (const result of results) {
-      if (result.amount !== 0n) {
-        if (!withdrawals[result.account]) {
-          withdrawals[result.account] = {};
-        }
-        if (!withdrawals[result.account][result.token]) {
-          withdrawals[result.account][result.token] = 0n;
-        }
-        withdrawals[result.account][result.token] += result.amount;
+  await runBatchPromises(promiseGenerators, BATCH_SIZE, (result) => {
+    if (result.amount !== 0n) {
+      if (!withdrawals[result.account]) {
+        withdrawals[result.account] = {};
       }
+      if (!withdrawals[result.account][result.token]) {
+        withdrawals[result.account][result.token] = 0n;
+      }
+      withdrawals[result.account][result.token] += result.amount;
     }
-  }
+  });
   return withdrawals;
 }
 
