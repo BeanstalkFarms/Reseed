@@ -8,6 +8,7 @@ const { asyncBeanstalkContractGetter } = require('./contracts/contract.js');
 const retryable = require('./utils/retryable.js');
 const storageLayout = require('./contracts/abi/storageLayout.json');
 const ContractStorage = require('@beanstalk/contract-storage');
+const { getBeanEthUnripeLP, getBean3CrvUnripeLP, getBeanLusdUnripeLP, seasonToStem, getLegacySeedsPerToken, packAddressAndStem } = require('./utils/silo/silo-util.js');
 
 let LOCAL = false;
 let BLOCK;
@@ -16,11 +17,6 @@ let bs;
 
 // Exploit migration
 const INITIAL_RECAP = BigInt(185564685220298701);
-const AMOUNT_TO_BDV_BEAN_ETH = BigInt(119894802186829);
-const AMOUNT_TO_BDV_BEAN_3CRV = BigInt(992035);
-const AMOUNT_TO_BDV_BEAN_LUSD = BigInt(983108);
-const UNRIPE_CURVE_BEAN_METAPOOL = '0x3a70DfA7d2262988064A2D051dd47521E43c9BdD';
-const UNRIPE_CURVE_BEAN_LUSD_POOL = '0xD652c40fBb3f06d6B58Cb9aa9CFF063eE63d465D';
 
 let stemStartSeason; // For v2 -> v3
 let stemScaleSeason; // For v3 -> v3.1
@@ -33,53 +29,6 @@ let netSystemStalk = BigInt(0);
 let netSystemMownStalk = BigInt(0);
 
 const BATCH_SIZE = 100;
-
-// Equivalent to LibBytes.packAddressAndStem
-function packAddressAndStem(address, stem) {
-  const addressBigInt = BigInt(address);
-  const stemBigInt = BigInt(stem);
-  return (addressBigInt << BigInt(96)) | (stemBigInt & BigInt('0xFFFFFFFFFFFFFFFFFFFFFFFF'));
-}
-
-// Equivalent to LibLegacyTokenSilo.seasonToStem
-function seasonToStem(season, seedsPerBdv) {
-  return (BigInt(season) - stemStartSeason) * (seedsPerBdv * BigInt(10 ** 6));
-}
-
-// Equivalent to LibLegacyTokenSilo.getLegacySeedsPerToken
-function getLegacySeedsPerToken(token) {
-  if (tokenEq(token, BEAN)) {
-    return 2n;
-  } else if (tokenEq(token, UNRIPE_BEAN)) {
-    return 2n;
-  } else if (tokenEq(token, UNRIPE_LP)) {
-    return 4n;
-  } else if (tokenEq(token, BEAN3CRV)) {
-    return 4n;
-  }
-  return 0n;
-}
-
-async function getBeanEthUnripeLP(account, season) {
-  return {
-    amount: (await bs.s.a[account].lp.deposits[season]) * AMOUNT_TO_BDV_BEAN_ETH / BigInt(10 ** 18),
-    bdv: (await bs.s.a[account].lp.depositSeeds[season]) / BigInt(4)
-  }
-}
-
-async function getBean3CrvUnripeLP(account, season) {
-  return {
-    amount: (await bs.s.a[account].legacyV2Deposits[UNRIPE_CURVE_BEAN_METAPOOL][season].amount) * AMOUNT_TO_BDV_BEAN_3CRV / BigInt(10 ** 18),
-    bdv: await bs.s.a[account].legacyV2Deposits[UNRIPE_CURVE_BEAN_METAPOOL][season].bdv
-  }
-}
-
-async function getBeanLusdUnripeLP(account, season) {
-  return {
-    amount: (await bs.s.a[account].legacyV2Deposits[UNRIPE_CURVE_BEAN_LUSD_POOL][season].amount) * AMOUNT_TO_BDV_BEAN_LUSD / BigInt(10 ** 18),
-    bdv: await bs.s.a[account].legacyV2Deposits[UNRIPE_CURVE_BEAN_LUSD_POOL][season].bdv
-  }
-}
 
 async function preProcessInit(deposits, lines) {
   for (const line of lines) {
@@ -107,7 +56,7 @@ async function processLine(deposits, line) {
       );
     } catch (e) {
       // stemTipForToken did not exist
-      stemTips[token] = seasonToStem(Number(await bs.s.season.current), getLegacySeedsPerToken(token))
+      stemTips[token] = seasonToStem(Number(await bs.s.season.current), stemStartSeason, getLegacySeedsPerToken(token))
     }
   }
 
@@ -123,7 +72,7 @@ async function processLine(deposits, line) {
     // the event data, so the information must be retrieved from storage directly. The provided entries are
     // all tokens/season numbers for each user. Pre-replant events are not included.
     // In theory there shouldnt be any users here who also have a v3 deposit.
-    stem = seasonToStem(season, getLegacySeedsPerToken(token));
+    stem = seasonToStem(season, stemStartSeason, getLegacySeedsPerToken(token));
     amount = await bs.s.a[account].legacyV2Deposits[token][season].amount;
     bdv = await bs.s.a[account].legacyV2Deposits[token][season].bdv;
     if (season < 6075) {
@@ -134,9 +83,9 @@ async function processLine(deposits, line) {
         bdv = bdv + legacyAmount * INITIAL_RECAP / BigInt(10 ** 18)
       } else if (tokenEq(token, UNRIPE_LP)) {
         // LibUnripeSilo.unripeLPDeposit
-        const { amount: ethAmount, bdv: ethBdv } = await getBeanEthUnripeLP(account, season);
-        const { amount: crvAmount, bdv: crvBdv } = await getBean3CrvUnripeLP(account, season);
-        const { amount: lusdAmount, bdv: lusdBdv } = await getBeanLusdUnripeLP(account, season);
+        const { amount: ethAmount, bdv: ethBdv } = await getBeanEthUnripeLP(account, season, bs);
+        const { amount: crvAmount, bdv: crvBdv } = await getBean3CrvUnripeLP(account, season, bs);
+        const { amount: lusdAmount, bdv: lusdBdv } = await getBeanLusdUnripeLP(account, season, bs);
         
         amount = amount + ethAmount + crvAmount + lusdAmount;
         const legBdv = (ethBdv + crvBdv + lusdBdv) * INITIAL_RECAP / BigInt(10 ** 18);
@@ -287,7 +236,7 @@ async function checkWallet(results, deposits, depositor) {
       // earned beans were already calculated above
       if (!deposits[depositor][token][stem].stalk) {
         if (deposits[depositor][token][stem].version.includes('season')) {
-          mowStem = seasonToStem(accountUpdates[depositor], getLegacySeedsPerToken(token));
+          mowStem = seasonToStem(accountUpdates[depositor], stemStartSeason, getLegacySeedsPerToken(token));
         }
         // Current delta, max delta (if mown now)
         const stemDeltas = [mowStem - BigInt(stem), stemTips[token] - BigInt(stem)];
@@ -303,6 +252,7 @@ async function checkWallet(results, deposits, depositor) {
     netDepositorStalk += netTokenStalk;
     netDepositorMownStalk += netTokenMownStalk;
     results[depositor].breakdown[token] = netTokenStalk;
+    deposits[account].totals[token].mowStem = mowStem;
   }
 
   const contractStalk = await getContractStalk(depositor);
