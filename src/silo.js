@@ -360,7 +360,7 @@ async function getContractStalk(account) {
     earned,
     germinating,
     doneGerminating,
-    sun: storage + earned + germinating + doneGerminating
+    sum: storage + earned + germinating + doneGerminating
   }
 }
 
