@@ -22,6 +22,8 @@ const { exportStorage } = require("./storage");
       await exportPlots(block);
       await exportFert(block);
       await exportMarket(block);
+      await exportInternalBalances(block);
+      await exportStorage(block);
       break;
     case 'silo':
       await exportDeposits(block);

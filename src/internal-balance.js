@@ -13,9 +13,11 @@ async function exportInternalBalances(block) {
 
   BLOCK = block;
   bs = new ContractStorage(await providerThenable, BEANSTALK, storageLayout, BLOCK);
-  
-  const withdrawals = await getWithdrawals();
 
+  // Main logic is TODO
+  
+  // Calcualte withdrawal amounts
+  const withdrawals = await getWithdrawals();
   const withdrawalsByToken = Object.values(withdrawals).reduce((a, next) => {
     for (token in next) {
       a[token] = (a[token] ?? 0n) + next[token];
@@ -23,14 +25,18 @@ async function exportInternalBalances(block) {
     return a;
   }, {});
 
-  console.log(withdrawalsByToken);
+  for (const token in withdrawalsByToken) {
+    if (withdrawalsByToken[token] !== await bs.s.siloBalances[token].withdrawn) {
+      console.log('[WARNING]: Mismatch between summation of user withdrawals and system-level withdrawals');
+    }
+  }
 
-  // Other logic is TODO
-
+  // Add withdrawals into internal balances
 }
 
 async function getWithdrawals() {
 
+  // Determine potential withdrawal accounts/seasons
   const withdrawalData = fs.readFileSync(`inputs/silo-withdrawn${BLOCK}.csv`, 'utf8');
   const entries = withdrawalData.split('\n').slice(1);
   const promiseGenerators = [];
@@ -45,6 +51,7 @@ async function getWithdrawals() {
     }
   }
 
+  // Find withdrawn amounts on the account/token level
   const withdrawals = {};
   while (promiseGenerators.length > 0) {
     const results = await Promise.all(promiseGenerators.splice(0, Math.min(BATCH_SIZE, promiseGenerators.length)).map(p => p()));
