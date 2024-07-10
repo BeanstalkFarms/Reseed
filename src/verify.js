@@ -6,6 +6,8 @@ const { getRinsableSprouts } = require('./utils/barn/barn-util.js');
 const storageLayout = require('./contracts/abi/storageLayout.json');
 const ContractStorage = require('@beanstalk/contract-storage');
 const { providerThenable } = require('./contracts/provider.js');
+const { getHarvestablePods } = require('./utils/field/field-util.js');
+const { getAmountInOrders } = require('./utils/market/market-util.js');
 
 let BLOCK;
 let beanstalk;
@@ -55,9 +57,15 @@ async function checkDepositedAmounts() {
     console.log(`Sum of Withdrawn:           ${withdrawn}`);
     console.log(`Sum of Internal Balances:   ${sumInternal[token]}`);
     if (tokenEq(token, BEAN)) {
+      const harvestable = getHarvestablePods(BLOCK);
       const rinsable = getRinsableSprouts(BLOCK);
+      const podOrders = getAmountInOrders(BLOCK);
+      console.log(`Sum of Harvestable Pods:    ${harvestable}`);
       console.log(`Sum of Unclaimed Sprouts:   ${rinsable}`);
+      console.log(`Sum of Pod order beans:     ${podOrders}`);
+      difference -= harvestable;
       difference -= rinsable;
+      difference -= podOrders;
     }
     if ([UNRIPE_BEAN, UNRIPE_LP].includes(token)) {
       console.log(`Sum of Unpicked:            ${sumUnpicked[token]}`);
