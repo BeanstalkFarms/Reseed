@@ -1,5 +1,6 @@
 const { tokenEq } = require("../token");
 const { BEAN, BEANWETH, BEAN3CRV, UNRIPE_BEAN, UNRIPE_LP } = require('../../contracts/addresses.js');
+const { createAsyncERC20ContractGetter } = require("../../contracts/contract.js");
 
 const AMOUNT_TO_BDV_BEAN_ETH = BigInt(119894802186829);
 const AMOUNT_TO_BDV_BEAN_3CRV = BigInt(992035);
@@ -54,6 +55,24 @@ async function getBeanLusdUnripeLP(account, season, bs) {
   }
 }
 
+// Returns the percentage of the given amount against the total token supply on Ethereum,
+// and the corresponding share of tokens on L2. L2 part can't be done until those tokens are deployed and minted.
+const l1TokenSupply = {};
+const l2TokenSupply = {};
+async function getPercentLpTokenAmounts(token, amount, BLOCK) {
+
+  if (!l1TokenSupply[token]) {
+    const tokenContract = await createAsyncERC20ContractGetter(token)();
+    l1TokenSupply[token] = BigInt(await tokenContract.callStatic.totalSupply({ blockTag: BLOCK }));
+  }
+  
+  const l1percent = Number(amount) / Number(l1TokenSupply[token]);
+  return {
+    l1percent,
+    l2amount: null // TODO
+  }
+}
+
 module.exports = {
   packAddressAndStem,
   seasonToStem,
@@ -61,6 +80,7 @@ module.exports = {
   getBeanEthUnripeLP,
   getBean3CrvUnripeLP,
   getBeanLusdUnripeLP,
+  getPercentLpTokenAmounts,
   WHITELISTED: [BEAN, BEANWETH, BEAN3CRV, UNRIPE_BEAN, UNRIPE_LP], // TODO wsteth
   WHITELISTED_LP: [BEANWETH, BEAN3CRV] // TODO wsteth
 }

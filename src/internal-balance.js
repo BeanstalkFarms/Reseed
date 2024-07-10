@@ -4,7 +4,7 @@ const { providerThenable } = require('./contracts/provider');
 const storageLayout = require('./contracts/abi/storageLayout.json');
 const ContractStorage = require('@beanstalk/contract-storage');
 const { getWithdrawals, getCurrentInternalBalances, getUnpickedUnripe } = require('./utils/balances/balances-util.js');
-const { WHITELISTED } = require('./utils/silo/silo-util.js');
+const { WHITELISTED, WHITELISTED_LP, getPercentLpTokenAmounts } = require('./utils/silo/silo-util.js');
 const { bigintHex } = require('./utils/json-formatter.js');
 
 const BATCH_SIZE = 100;
@@ -66,10 +66,19 @@ async function exportInternalBalances(block) {
           unpicked: unpicked[account]?.[token] ?? 0n,
           total: sum
         };
+
+        // Scale lp token amounts according to the amount minted on l2
+        if (WHITELISTED_LP.includes(token)) {
+          breakdown.accounts[account][token] = {
+            ...breakdown.accounts[account][token],
+            ...await getPercentLpTokenAmounts(token, sum, BLOCK)
+          }
+        }
       }
     }
   }
 
+  // Set totals
   for (const token of WHITELISTED) {
     const sum =
       (balancesByToken[token] ?? 0n) +
@@ -82,8 +91,6 @@ async function exportInternalBalances(block) {
       total: sum
     }
   }
-
-  // Scale lp token amounts according to the amount minted on l2
 
   const balancesOutFile = `results/internal-balances${BLOCK}.json`;
   await fs.promises.writeFile(balancesOutFile, JSON.stringify(breakdown, bigintHex, 2));
