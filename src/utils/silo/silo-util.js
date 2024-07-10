@@ -1,5 +1,5 @@
 const { tokenEq } = require("../token");
-const { BEAN, UNRIPE_BEAN, UNRIPE_LP, BEAN3CRV } = require('../../contracts/addresses.js');
+const { BEAN, BEANWETH, BEAN3CRV, UNRIPE_BEAN, UNRIPE_LP } = require('../../contracts/addresses.js');
 
 const AMOUNT_TO_BDV_BEAN_ETH = BigInt(119894802186829);
 const AMOUNT_TO_BDV_BEAN_3CRV = BigInt(992035);
@@ -60,5 +60,7 @@ module.exports = {
   getLegacySeedsPerToken,
   getBeanEthUnripeLP,
   getBean3CrvUnripeLP,
-  getBeanLusdUnripeLP
+  getBeanLusdUnripeLP,
+  WHITELISTED: [BEAN, BEANWETH, BEAN3CRV, UNRIPE_BEAN, UNRIPE_LP], // TODO wsteth
+  WHITELISTED_LP: [BEANWETH, BEAN3CRV] // TODO wsteth
 }

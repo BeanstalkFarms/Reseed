@@ -5,9 +5,7 @@ const { getActualActiveFertilizer, getActualFertilizedIndex, getActualUnfertiliz
 const { tokenEq } = require('../token.js');
 const { createAsyncERC20ContractGetter } = require('../../contracts/contract.js');
 const { runBatchPromises } = require('../batch-promise.js');
-
-const WHITELISTED = [BEAN, BEANWETH, BEAN3CRV, UNRIPE_BEAN, UNRIPE_LP]; // TODO wsteth
-const WHITELISTED_LP = [BEANWETH, BEAN3CRV]; // TODO wsteth
+const { WHITELISTED } = require('../silo/silo-util.js');
 
 let BLOCK;
 let bs;

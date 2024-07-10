@@ -3,13 +3,15 @@ const { BEANSTALK } = require('./contracts/addresses.js');
 const { providerThenable } = require('./contracts/provider');
 const storageLayout = require('./contracts/abi/storageLayout.json');
 const ContractStorage = require('@beanstalk/contract-storage');
-const { runBatchPromises } = require('./utils/batch-promise.js');
+const { getWithdrawals, getCurrentInternalBalances, getUnpickedUnripe } = require('./utils/balances/balances-util.js');
+const { WHITELISTED } = require('./utils/silo/silo-util.js');
+const { bigintHex } = require('./utils/json-formatter.js');
 
 const BATCH_SIZE = 100;
+
 let BLOCK;
 let bs;
 
-//s.a[account].withdrawals[token][season]
 async function exportInternalBalances(block) {
 
   BLOCK = block;
@@ -22,11 +24,12 @@ async function exportInternalBalances(block) {
     return a;
   };
 
-  const currentInternalBalances = await getCurrentInternalBalances();
+  console.log('Getting user internal balances...');
+  const currentInternalBalances = await getCurrentInternalBalances(bs, BLOCK, BATCH_SIZE);
   const balancesByToken = Object.values(currentInternalBalances).reduce(reducer, {});
   
-  // Calcualte withdrawal amounts
-  const withdrawals = await getWithdrawals();
+  console.log('Getting user unclaimed withdrawals...');
+  const withdrawals = await getWithdrawals(bs, BLOCK, BATCH_SIZE);
   const withdrawalsByToken = Object.values(withdrawals).reduce(reducer, {});
 
   for (const token in withdrawalsByToken) {
@@ -35,74 +38,57 @@ async function exportInternalBalances(block) {
     }
   }
 
-  // Calculate unpicked unripe amounts
+  console.log('Getting user unpicked unripe...');
+  const unpicked = await getUnpickedUnripe(bs, BLOCK, BATCH_SIZE);
+  const unpickedByToken = Object.values(unpicked).reduce(reducer, {});
 
   // Add withdrawals/unpicked into internal balances
+  const allAccounts = [...new Set([
+    ...Object.keys(currentInternalBalances),
+    ...Object.keys(withdrawals),
+    ...Object.keys(unpicked)
+  ])];
+  const breakdown = { 
+    accounts: {},
+    totals: {}
+  };
+  for (const account of allAccounts) {
+    breakdown.accounts[account] = {};
+    for (const token of WHITELISTED) {
+      const sum =
+        (currentInternalBalances[account]?.[token] ?? 0n) +
+        (withdrawals[account]?.[token] ?? 0n) +
+        (unpicked[account]?.[token] ?? 0n);
+      if (sum > 0n) {
+        breakdown.accounts[account][token] = {
+          currentInternal: currentInternalBalances[account]?.[token] ?? 0n,
+          withdrawn: withdrawals[account]?.[token] ?? 0n,
+          unpicked: unpicked[account]?.[token] ?? 0n,
+          total: sum
+        };
+      }
+    }
+  }
+
+  for (const token of WHITELISTED) {
+    const sum =
+      (balancesByToken[token] ?? 0n) +
+      (withdrawalsByToken[token] ?? 0n) +
+      (unpickedByToken[token] ?? 0n);
+    breakdown.totals[token] = {
+      currentInternal: balancesByToken[token] ?? 0n,
+      withdrawn: withdrawalsByToken[token] ?? 0n,
+      unpicked: unpickedByToken[token] ?? 0n,
+      total: sum
+    }
+  }
 
   // Scale lp token amounts according to the amount minted on l2
-}
 
-async function getCurrentInternalBalances() {
-  const balancesData = fs.readFileSync(`inputs/internal-balances${BLOCK}.csv`, 'utf8');
-  const entries = balancesData.split('\n').slice(1);
-  const promiseGenerators = [];
-  for (const entry of entries) {
-    const [account, token] = entry.split(',');
-    if (account) {
-      promiseGenerators.push(async () => ({
-        account,
-        token,
-        amount: BigInt(await bs.s.internalTokenBalance[account][token])
-      }));
-    }
-  }
+  const balancesOutFile = `results/internal-balances${BLOCK}.json`;
+  await fs.promises.writeFile(balancesOutFile, JSON.stringify(breakdown, bigintHex, 2));
 
-  const internalTokenBalances = {};
-  await runBatchPromises(promiseGenerators, BATCH_SIZE, (result) => {
-    if (result.amount > 0n) {
-      if (!internalTokenBalances[result.account]) {
-        internalTokenBalances[result.account] = {};
-      }
-      if (!internalTokenBalances[result.account][result.token]) {
-        internalTokenBalances[result.account][result.token] = 0n;
-      }
-      internalTokenBalances[result.account][result.token] += result.amount;
-    }
-  });
-  return internalTokenBalances;
-}
-
-async function getWithdrawals() {
-
-  // Determine potential withdrawal accounts/seasons
-  const withdrawalData = fs.readFileSync(`inputs/silo-withdrawn${BLOCK}.csv`, 'utf8');
-  const entries = withdrawalData.split('\n').slice(1);
-  const promiseGenerators = [];
-  for (const entry of entries) {
-    const [account, token, season] = entry.split(',');
-    if (account) {
-      promiseGenerators.push(async () => ({
-        account,
-        token,
-        amount: BigInt(await bs.s.a[account].withdrawals[token][season])
-      }));
-    }
-  }
-
-  // Find withdrawn amounts on the account/token level
-  const withdrawals = {};
-  await runBatchPromises(promiseGenerators, BATCH_SIZE, (result) => {
-    if (result.amount !== 0n) {
-      if (!withdrawals[result.account]) {
-        withdrawals[result.account] = {};
-      }
-      if (!withdrawals[result.account][result.token]) {
-        withdrawals[result.account][result.token] = 0n;
-      }
-      withdrawals[result.account][result.token] += result.amount;
-    }
-  });
-  return withdrawals;
+  console.log(`\rWrote internal balances to ${balancesOutFile}`);
 }
 
 module.exports = {

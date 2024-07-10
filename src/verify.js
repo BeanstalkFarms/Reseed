@@ -16,6 +16,7 @@ async function checkDepositedAmounts() {
   // Get total deposited amount of each token
   const totalDeposited = {};
   const sumInternal = {};
+  const sumUnpicked = {};
   const allDeposits = JSON.parse(fs.readFileSync(`results/deposits${BLOCK}.json`));
   for (const account in allDeposits) {
     for (const token in allDeposits[account].totals) {
@@ -35,13 +36,10 @@ async function checkDepositedAmounts() {
   }
 
   // Get internal balance amounts
-  const internalBalances = fs.readFileSync(`inputs/internal-totals${BLOCK}.csv`, 'utf8');
-  const entries = internalBalances.split('\n').slice(1);
-  for (const row of entries) {
-    const elem = row.split(',');
-    if (totalDeposited[elem[0]]) {
-      sumInternal[elem[0]] = BigInt(elem[1]);
-    }
+  const internalBalances = JSON.parse(fs.readFileSync(`results/internal-balances${BLOCK}.json`));
+  for (const token in internalBalances.totals) {
+    sumInternal[token] = BigInt(internalBalances.totals[token].currentInternal);
+    sumUnpicked[token] = BigInt(internalBalances.totals[token].unpicked);
   }
 
   // Compare against total amount of tokens in the contract
@@ -60,6 +58,10 @@ async function checkDepositedAmounts() {
       const rinsable = getRinsableSprouts(BLOCK);
       console.log(`Sum of Unclaimed Sprouts:   ${rinsable}`);
       difference -= rinsable;
+    }
+    if ([UNRIPE_BEAN, UNRIPE_LP].includes(token)) {
+      console.log(`Sum of Unpicked:            ${sumUnpicked[token]}`);
+      difference -= sumUnpicked[token];
     }
     if ([BEAN, BEANWETH].includes(token)) {
       const underlying = BigInt(await beanstalk.callStatic.getTotalUnderlying(token === BEAN ? UNRIPE_BEAN : UNRIPE_LP, { blockTag: BLOCK }));
