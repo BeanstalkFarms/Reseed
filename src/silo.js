@@ -8,7 +8,7 @@ const { asyncBeanstalkContractGetter } = require('./contracts/contract.js');
 const retryable = require('./utils/retryable.js');
 const storageLayout = require('./contracts/abi/storageLayout.json');
 const ContractStorage = require('@beanstalk/contract-storage');
-const { getBeanEthUnripeLP, getBean3CrvUnripeLP, getBeanLusdUnripeLP, seasonToStem, getLegacySeedsPerToken, packAddressAndStem } = require('./utils/silo/silo-util.js');
+const { getBeanEthUnripeLP, getBean3CrvUnripeLP, getBeanLusdUnripeLP, seasonToStem, getLegacySeedsPerToken, packAddressAndStem, WHITELISTED_LP, getPercentLpTokenAmounts } = require('./utils/silo/silo-util.js');
 
 let LOCAL = false;
 let BLOCK;
@@ -110,7 +110,8 @@ async function processLine(deposits, line) {
 }
 
 // Now that all deposits are populated, calculate total deposited amount/bdv for each token per user
-function calcDepositTotals(account, deposits) {
+// Also performs async lp scaling according to supply on L2.
+async function calcDepositTotals(account, deposits) {
   deposits[account].totals = {};
   for (const token in deposits[account]) {
     if (token == 'totals') {
@@ -126,6 +127,13 @@ function calcDepositTotals(account, deposits) {
       deposits[account].totals[token].bdv += deposits[account][token][stem].bdv;
       if (deposits[account][token][stem].version.includes('season')) {
         deposits[account].totals[token].seeds += deposits[account][token][stem].bdv * getLegacySeedsPerToken(token);
+      }
+      // Scale lp token amounts according to the amount minted on l2
+      if (WHITELISTED_LP.includes(token)) {
+        deposits[account].totals[token] = {
+          ...deposits[account].totals[token],
+          ...await getPercentLpTokenAmounts(token, deposits[account].totals[token].amount, BLOCK)
+        }
       }
     }
   }
@@ -210,7 +218,7 @@ async function checkWallet(results, deposits, depositor) {
       // Don't need to set stalk here since they must have already mown this season
     }
   }
-  calcDepositTotals(depositor, deposits);
+  await calcDepositTotals(depositor, deposits);
 
   let netDepositorStalk = 0n;
   let netDepositorMownStalk = 0n;
