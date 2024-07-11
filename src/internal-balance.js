@@ -3,7 +3,7 @@ const { BEANSTALK } = require('./contracts/addresses.js');
 const { providerThenable } = require('./contracts/provider');
 const storageLayout = require('./contracts/abi/storageLayout.json');
 const ContractStorage = require('@beanstalk/contract-storage');
-const { getWithdrawals, getCurrentInternalBalances, getUnpickedUnripe, getPercentLpTokenAmounts } = require('./utils/balances/balances-util.js');
+const { getWithdrawals, getCurrentInternalBalances, getUnpickedUnripe, getL2TokenAmount } = require('./utils/balances/balances-util.js');
 const { WHITELISTED, WHITELISTED_LP } = require('./utils/silo/silo-util.js');
 const { bigintHex } = require('./utils/json-formatter.js');
 
@@ -64,16 +64,10 @@ async function exportInternalBalances(block) {
           currentInternal: currentInternalBalances[account]?.[token] ?? 0n,
           withdrawn: withdrawals[account]?.[token] ?? 0n,
           unpicked: unpicked[account]?.[token] ?? 0n,
-          total: sum
+          total: sum,
+          // Scales lp token amounts according to the amount minted on l2
+          l2total: await getL2TokenAmount(token, sum, BLOCK)
         };
-
-        // Scale lp token amounts according to the amount minted on l2
-        if (WHITELISTED_LP.includes(token)) {
-          breakdown.accounts[account][token] = {
-            ...breakdown.accounts[account][token],
-            ...await getPercentLpTokenAmounts(token, sum, BLOCK)
-          }
-        }
       }
     }
   }

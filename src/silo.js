@@ -9,7 +9,7 @@ const retryable = require('./utils/retryable.js');
 const storageLayout = require('./contracts/abi/storageLayout.json');
 const ContractStorage = require('@beanstalk/contract-storage');
 const { getBeanEthUnripeLP, getBean3CrvUnripeLP, getBeanLusdUnripeLP, seasonToStem, getLegacySeedsPerToken, packAddressAndStem, WHITELISTED_LP } = require('./utils/silo/silo-util.js');
-const { getPercentLpTokenAmounts } = require('./utils/balances/balances-util.js');
+const { getL2TokenAmount } = require('./utils/balances/balances-util.js');
 
 let LOCAL = false;
 let BLOCK;
@@ -124,20 +124,20 @@ async function calcDepositTotals(account, deposits) {
       bdv: 0n,
       seeds: 0n
     };
+    const totalL2Deposited = 0n;
     for (const stem in deposits[account][token]) {
       deposits[account].totals[token].amount += deposits[account][token][stem].amount;
       deposits[account].totals[token].bdv += deposits[account][token][stem].bdv;
       if (deposits[account][token][stem].version.includes('season')) {
         deposits[account].totals[token].seeds += deposits[account][token][stem].bdv * getLegacySeedsPerToken(token);
       }
-      // Scale lp token amounts according to the amount minted on l2
-      if (WHITELISTED_LP.includes(token)) {
-        deposits[account].totals[token] = {
-          ...deposits[account].totals[token],
-          ...await getPercentLpTokenAmounts(token, deposits[account].totals[token].amount, BLOCK)
-        }
-      }
+      // Scale l2 token amounts for each deposit
+      const l2TokenAmount = await getL2TokenAmount(token, deposits[account][token][stem].amount, BLOCK);
+      deposits[account][token][stem].l2Amount = l2TokenAmount;
+      totalL2Deposited += l2TokenAmount;
     }
+    // Scale lp token amounts according to the amount minted on l2
+    deposits[account].totals[token].l2Amount = totalL2Deposited;
   }
 }
 

@@ -21,8 +21,9 @@ async function allAccountStructs(options) {
   // Load the balance result files (need to have already been computed)
   allDeposits = JSON.parse(fs.readFileSync(`results/deposits${BLOCK}.json`));
   allPlots = JSON.parse(fs.readFileSync(`results/pods${BLOCK}.json`));
+  allBalances = JSON.parse(fs.readFileSync(`results/internal-balances${BLOCK}.json`));
 
-  allAccounts = [...new Set([...Object.keys(allDeposits), ...Object.keys(allPlots)])];
+  allAccounts = [...new Set([...Object.keys(allDeposits), ...Object.keys(allPlots), ...Object.keys(allBalances.accounts)])];
 
   const promiseGenerators = allAccounts.map(a => async () => ({
     input: a,
@@ -59,6 +60,8 @@ async function accountStruct(account) {
     0: getAccountField(account)
   };
 
+  const internalTokenBalance = getAccountInternalBalances(account);
+
   process.stdout.write(`\r${++walletProgress} / ${allAccounts.length}`);
   
   return {
@@ -78,8 +81,7 @@ async function accountStruct(account) {
     mowStatuses,
     isApprovedForAll: {},
     germinatingStalk,
-    // TODO: this also needs to include internal balances from withdrawn assets
-    // internalTokenBalance,
+    internalTokenBalance,
     // bytes32[16] _buffer_1,
     sop: {} // assumption being it doesnt sop before l2 migration
   }
@@ -100,7 +102,7 @@ function getAccountSilo(account) {
       const deposit = allDeposits[account][token][stem];
       const depositId = packAddressAndStem(token, stem);
       deposits[depositId] = {
-        amount: deposit.amount,
+        amount: deposit.l2Amount,
         bdv: deposit.bdv
       };
       depositIdList[token].push(depositId);
@@ -138,6 +140,14 @@ async function germinatingMapping(account) {
     0: oddGerm,
     1: evenGerm
   };
+}
+
+function getAccountInternalBalances(account) {
+  const internalTokenBalance = {};
+  for (const token in allBalances.accounts[account]) {
+    internalTokenBalance[token] = BigInt(allBalances.accounts[account][token].l2amount);
+  }
+  return internalTokenBalance;
 }
 
 module.exports = {

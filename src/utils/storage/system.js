@@ -368,7 +368,7 @@ async function assetSiloStruct(token) {
     deposited,
     depositedBdv
   ] = await Promise.all([
-    bs.s.siloBalances[token].deposited,
+    bs.s.siloBalances[token].deposited, // TODO: l2 token scaling
     bs.s.siloBalances[token].depositedBdv
   ]);
   return {
@@ -488,7 +488,7 @@ async function germinatingMapping() {
   })));
   const reducer = (a, next) => {
     a[next.token] = {
-      amount: next.amount,
+      amount: next.amount, // TODO: need to do token amount scaling here also
       bdv: next.bdv
     };
     return a;
