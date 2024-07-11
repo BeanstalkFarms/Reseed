@@ -35,18 +35,8 @@ async function systemStruct(options) {
     bs.s.deprecated2// bs.s.casesV2 TODO: using shorter array because its faster for testing
   ]);
 
-
-  const market = JSON.parse(fs.readFileSync(`results/market${BLOCK}.json`));
-  const podListings = {
-    0: {}
-  }
-  const podOrders = {};
-  for (const listIndex in market.listings.beanstalk3) {
-    podListings[0][listIndex] = market.listings.beanstalk3[listIndex];
-  }
-  for (const orderId in market.orders.beanstalk3) {
-    podOrders[orderId] = market.orders.beanstalk3[orderId];
-  }
+  const { podListings, podOrders } = getMarketMappings();
+  const internalTokenBalanceTotal = getInternalBalanceMapping();
 
   const wellOracleSnapshots = {
     [BEANWETH]: beanWethSnapshot
@@ -120,8 +110,7 @@ async function systemStruct(options) {
     // bytes32[16] _buffer_0,
     podListings,
     podOrders,
-    // TODO: this also needs to include internal balances from withdrawn assets
-    // internalTokenBalanceTotal,
+    internalTokenBalanceTotal,
     wellOracleSnapshots,
     twaReserves,
     usdTokenPrice,
@@ -142,6 +131,33 @@ async function systemStruct(options) {
     seedGaugeSettings,
     sop
   };
+}
+
+function getMarketMappings() {
+  const market = JSON.parse(fs.readFileSync(`results/market${BLOCK}.json`));
+  const podListings = {
+    0: {}
+  }
+  const podOrders = {};
+  for (const listIndex in market.listings.beanstalk3) {
+    podListings[0][listIndex] = market.listings.beanstalk3[listIndex];
+  }
+  for (const orderId in market.orders.beanstalk3) {
+    podOrders[orderId] = market.orders.beanstalk3[orderId];
+  }
+  return {
+    podListings,
+    podOrders
+  };
+}
+
+function getInternalBalanceMapping() {
+  const balancesFile = JSON.parse(fs.readFileSync(`results/internal-balances${BLOCK}.json`));
+  const internalBalances = {};
+  for (const token in balancesFile.totals) {
+    internalBalances[token] = BigInt(balancesFile.totals[token].l2total);
+  }
+  return internalBalances;
 }
 
 async function siloStruct() {

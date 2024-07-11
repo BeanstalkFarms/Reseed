@@ -145,7 +145,7 @@ async function germinatingMapping(account) {
 function getAccountInternalBalances(account) {
   const internalTokenBalance = {};
   for (const token in allBalances.accounts[account]) {
-    internalTokenBalance[token] = BigInt(allBalances.accounts[account][token].l2amount);
+    internalTokenBalance[token] = BigInt(allBalances.accounts[account][token].l2total);
   }
   return internalTokenBalance;
 }

@@ -21,16 +21,16 @@ async function exportStorage(block) {
   beanstalk = await asyncBeanstalkContractGetter();
   bs = new ContractStorage(await providerThenable, BEANSTALK, storageLayout, BLOCK);
 
-  // const system = await systemStruct({
-  //   block: BLOCK,
-  //   bs
-  // });
+  const system = await systemStruct({
+    block: BLOCK,
+    bs
+  });
 
-  // // Consider combining into a single out file?
-  // const systemOutFile = `results/storage-system${BLOCK}.json`;
-  // await fs.promises.writeFile(systemOutFile, JSON.stringify(system, bigintHex, 2));
+  // Consider combining into a single out file?
+  const systemOutFile = `results/storage-system${BLOCK}.json`;
+  await fs.promises.writeFile(systemOutFile, JSON.stringify(system, bigintHex, 2));
 
-  // console.log(`\rWrote system storage to ${systemOutFile}`);
+  console.log(`\rWrote system storage to ${systemOutFile}`);
 
   const accounts = await allAccountStructs({
     block: BLOCK,

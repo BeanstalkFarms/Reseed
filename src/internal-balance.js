@@ -82,7 +82,8 @@ async function exportInternalBalances(block) {
       currentInternal: balancesByToken[token] ?? 0n,
       withdrawn: withdrawalsByToken[token] ?? 0n,
       unpicked: unpickedByToken[token] ?? 0n,
-      total: sum
+      total: sum,
+      l2total: Object.keys(breakdown.accounts).reduce((a, next) => a + (breakdown.accounts[next][token]?.l2total ?? 0n), 0n)
     }
   }
 

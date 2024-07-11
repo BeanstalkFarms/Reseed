@@ -124,7 +124,7 @@ async function calcDepositTotals(account, deposits) {
       bdv: 0n,
       seeds: 0n
     };
-    const totalL2Deposited = 0n;
+    let totalL2Deposited = 0n;
     for (const stem in deposits[account][token]) {
       deposits[account].totals[token].amount += deposits[account][token][stem].amount;
       deposits[account].totals[token].bdv += deposits[account][token][stem].bdv;
