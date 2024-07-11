@@ -343,7 +343,7 @@ async function exportDeposits(block) {
     beanstalk = await asyncBeanstalkContractGetter();
     bs = new ContractStorage(await providerThenable, BEANSTALK, storageLayout, BLOCK);
   } else {
-    beanstalk = await asyncBeanstalkContractGetter(true);
+    beanstalk = await asyncBeanstalkContractGetter({ isLocal: true });
     bs = new ContractStorage(localProvider, BEANSTALK, storageLayout, BLOCK);
   }
   stemStartSeason = await bs.s.season.stemStartSeason;
@@ -399,12 +399,14 @@ async function exportDeposits(block) {
   const storageGerminating = await getSystemGerminating();
   // Germinating is added here because it was added into all user balances already (but not s.s.stalk)
   const storageStalk =  await bs.s.s.stalk + storageGerminating;
+  const storageEarnedBeans = await bs.s.earnedBeans;
   console.log(`Expected sum (s.s.stalk + s.odd/evenGerminating):         ${storageStalk}`);
   console.log(`Difference?                                               ${storageStalk - netSystemStalk}`)
   console.log(`System germinating:                                       ${storageGerminating}`);
   console.log(`System stalk after all is planted/mown:                   ${netSystemMownStalk}`);
-  console.log(`System earned beans:                                      ${await bs.s.earnedBeans}`);
+  console.log(`System earned beans:                                      ${storageEarnedBeans}`);
   console.log(`Sum of planted user earned beans:                         ${sumUserEarnedBeans}`);
+  console.log(`Difference?                                               ${storageEarnedBeans - sumUserEarnedBeans}`);
 }
 
 module.exports = {
