@@ -8,7 +8,8 @@ const { asyncBeanstalkContractGetter } = require('./contracts/contract.js');
 const retryable = require('./utils/retryable.js');
 const storageLayout = require('./contracts/abi/storageLayout.json');
 const ContractStorage = require('@beanstalk/contract-storage');
-const { getBeanEthUnripeLP, getBean3CrvUnripeLP, getBeanLusdUnripeLP, seasonToStem, getLegacySeedsPerToken, packAddressAndStem, WHITELISTED_LP, getPercentLpTokenAmounts } = require('./utils/silo/silo-util.js');
+const { getBeanEthUnripeLP, getBean3CrvUnripeLP, getBeanLusdUnripeLP, seasonToStem, getLegacySeedsPerToken, packAddressAndStem, WHITELISTED_LP } = require('./utils/silo/silo-util.js');
+const { getPercentLpTokenAmounts } = require('./utils/balances/balances-util.js');
 
 let LOCAL = false;
 let BLOCK;
@@ -27,6 +28,7 @@ let stemTips = {};
 
 let netSystemStalk = BigInt(0);
 let netSystemMownStalk = BigInt(0);
+let sumUserEarnedBeans = BigInt(0);
 
 const BATCH_SIZE = 100;
 
@@ -217,6 +219,7 @@ async function checkWallet(results, deposits, depositor) {
       deposits[depositor][BEAN][stemTips[BEAN]].version.push('v3.1');
       // Don't need to set stalk here since they must have already mown this season
     }
+    sumUserEarnedBeans += earnedBeans;
   }
   await calcDepositTotals(depositor, deposits);
 
@@ -399,8 +402,9 @@ async function exportDeposits(block) {
   console.log(`Expected sum (s.s.stalk + s.odd/evenGerminating):         ${storageStalk}`);
   console.log(`Difference?                                               ${storageStalk - netSystemStalk}`)
   console.log(`System germinating:                                       ${storageGerminating}`);
-  console.log(`System earned beans:                                      ${await bs.s.earnedBeans}`);
   console.log(`System stalk after all is planted/mown:                   ${netSystemMownStalk}`);
+  console.log(`System earned beans:                                      ${await bs.s.earnedBeans}`);
+  console.log(`Sum of planted user earned beans:                         ${sumUserEarnedBeans}`);
 }
 
 module.exports = {

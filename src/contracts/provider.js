@@ -2,13 +2,17 @@ const ethers = require('ethers');
 require('dotenv').config();
 const { Network, Alchemy } = require('alchemy-sdk');
 
-const settings = {
+const mainnet = new Alchemy({
   apiKey: process.env.ALCHEMY_API_KEY,
   network: Network.ETH_MAINNET,
-};
+});
+
+const arb = new Alchemy({
+  apiKey: process.env.ALCHEMY_API_KEY,
+  network: Network.ARB_MAINNET,
+});
 
 // Wrapper to support getStorageAt (available on alchemy provider but not ethers)
-const alchemy = new Alchemy(settings);
 class LocalProvider extends ethers.JsonRpcProvider {
   constructor(rpcUrl) {
     super(rpcUrl);
@@ -24,7 +28,8 @@ class LocalProvider extends ethers.JsonRpcProvider {
 const localProvider = new LocalProvider('http://127.0.0.1:8545');
 
 module.exports = {
-  alchemy,
+  alchemy: mainnet,
   localProvider,
-  providerThenable: alchemy.config.getProvider()
+  providerThenable: mainnet.config.getProvider(),
+  arbProviderThenable: arb.config.getProvider()
 };

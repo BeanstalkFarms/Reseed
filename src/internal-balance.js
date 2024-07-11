@@ -3,8 +3,8 @@ const { BEANSTALK } = require('./contracts/addresses.js');
 const { providerThenable } = require('./contracts/provider');
 const storageLayout = require('./contracts/abi/storageLayout.json');
 const ContractStorage = require('@beanstalk/contract-storage');
-const { getWithdrawals, getCurrentInternalBalances, getUnpickedUnripe } = require('./utils/balances/balances-util.js');
-const { WHITELISTED, WHITELISTED_LP, getPercentLpTokenAmounts } = require('./utils/silo/silo-util.js');
+const { getWithdrawals, getCurrentInternalBalances, getUnpickedUnripe, getPercentLpTokenAmounts } = require('./utils/balances/balances-util.js');
+const { WHITELISTED, WHITELISTED_LP } = require('./utils/silo/silo-util.js');
 const { bigintHex } = require('./utils/json-formatter.js');
 
 const BATCH_SIZE = 100;

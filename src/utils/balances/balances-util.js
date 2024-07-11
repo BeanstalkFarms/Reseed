@@ -1,7 +1,8 @@
 const fs = require('fs');
 const { runBatchPromises } = require('../batch-promise');
-const { BEAN, UNRIPE_BEAN, UNRIPE_LP, BEAN3CRV } = require('../../contracts/addresses.js');
+const { BEANWETH, UNRIPE_BEAN, UNRIPE_LP, BEAN3CRV } = require('../../contracts/addresses.js');
 const { WHITELISTED } = require('../silo/silo-util.js');
+const { createAsyncERC20ContractGetter } = require('../../contracts/contract.js');
 
 async function getCurrentInternalBalances(bs, BLOCK, BATCH_SIZE) {
   const balancesData = fs.readFileSync(`inputs/internal-balances${BLOCK}.csv`, 'utf8');
@@ -103,8 +104,41 @@ async function getUnpickedUnripe(bs, BLOCK, BATCH_SIZE) {
   return unpicked;
 }
 
+// Returns the percentage of the given amount against the total token supply on Ethereum,
+// and the corresponding share of tokens on L2. L2 part can't be done until those tokens are deployed and minted.
+const l1TokenSupply = {};
+const l2TokenSupply = {};
+const tokenMapping = { // TODO once contracts deployed on l2
+  [BEANWETH] : 'l2 beanweth here',
+  // [BEANWSTETH] : 'l2 beanwsteth here',
+  [BEAN3CRV] : 'l2 stable lp token here'
+}
+async function getPercentLpTokenAmounts(token, amount, BLOCK) {
+
+  if (!l1TokenSupply[token]) {
+    const tokenContract = await createAsyncERC20ContractGetter(token)();
+    l1TokenSupply[token] = BigInt(await tokenContract.callStatic.totalSupply({ blockTag: BLOCK }));
+  }
+
+  const l2Token = tokenMapping[token];
+  if (!l2TokenSupply[l2Token]) {
+    // TODO: uncomment once contracts deployed on l2
+    // const tokenContract = await createAsyncERC20ContractGetter(token, { provider: arbProviderThenable })();
+    // l2TokenSupply[l2Token] = BigInt(await tokenContract.callStatic.totalSupply({ blockTag: BLOCK }));
+    l2TokenSupply[l2Token] = BigInt(10 ** 7);
+  }
+  
+  const l1percent = Number(amount) / Number(l1TokenSupply[token]);
+  const l2amount = BigInt(Math.floor(l1percent * Number(l2TokenSupply[l2Token])));
+  return {
+    l1percent,
+    l2amount
+  }
+}
+
 module.exports = {
   getCurrentInternalBalances,
   getWithdrawals,
-  getUnpickedUnripe
+  getUnpickedUnripe,
+  getPercentLpTokenAmounts
 }

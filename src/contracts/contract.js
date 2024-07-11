@@ -7,11 +7,18 @@ const erc20Abi = require('./abi/erc20.json');
 const fertAbi = require('./abi/fertilizer.json');
 
 const contracts = {};
-async function getContractAsync(address, abi, isLocal = false) {
-  const key = JSON.stringify({ address, abi, isLocal });
+async function getContractAsync(address, abi, { provider, isLocal = false }) {
+  let network;
+  if (!isLocal) {
+    provider = await provider;
+    network = (await provider.detectNetwork()).name;
+  } else {
+    network = 'local';
+  }
+  const key = JSON.stringify({ address, abi, network, isLocal });
   if (contracts[key] == null) {
     if (!isLocal) {
-      contracts[key] = new Contract(address, abi, await providerThenable);
+      contracts[key] = new Contract(address, abi, provider);
     } else {
       const contract = new ethers.Contract(address, abi, localProvider);
       const handler = {
@@ -45,9 +52,9 @@ async function getBalance(token, holder, blockNumber = 'latest') {
 }
 
 module.exports = {
-  asyncBeanstalkContractGetter: async (isLocal = false) => getContractAsync(BEANSTALK, beanAbi, isLocal),
-  asyncFertContractGetter: async () => getContractAsync(FERTILIZER, fertAbi),
-  createAsyncERC20ContractGetter: (address) => async () => getContractAsync(address, erc20Abi),
+  asyncBeanstalkContractGetter: async ({ provider, isLocal } = { provider: providerThenable, isLocal: false}) => getContractAsync(BEANSTALK, beanAbi, { provider, isLocal }),
+  asyncFertContractGetter: async ({ provider, isLocal } = { provider: providerThenable, isLocal: false}) => getContractAsync(FERTILIZER, fertAbi, { provider, isLocal }),
+  createAsyncERC20ContractGetter: (address, { provider, isLocal } = { provider: providerThenable, isLocal: false}) => async () => getContractAsync(address, erc20Abi, { provider, isLocal }),
   getContractAsync: getContractAsync,
   getBalance: getBalance
 };
