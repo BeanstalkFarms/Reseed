@@ -6,6 +6,7 @@ const { l2Token } = require('../token');
 
 let BLOCK;
 let bs;
+let currentSeason;
 
 let allDeposits;
 let allPlots;
@@ -19,6 +20,8 @@ async function allAccountStructs(options) {
 
   BLOCK = options.block;
   bs = options.bs;
+
+  currentSeason = await bs.s.season.current;
 
   // Load the balance result files (need to have already been computed)
   allDeposits = JSON.parse(fs.readFileSync(`results/deposits${BLOCK}.json`));
@@ -43,15 +46,13 @@ async function allAccountStructs(options) {
 async function accountStruct(account) {
 
   const [
-    lastUpdate,
+    actualLastUpdate,
     lastSop,
-    lastRain,
-    germinatingStalk 
+    lastRain
   ] = await Promise.all([
     bs.s.a[account].lastUpdate,
     bs.s.a[account].lastSop,
-    bs.s.a[account].lastRain,
-    germinatingMapping(account)
+    bs.s.a[account].lastRain
   ]);
 
   const stalk = BigInt(allDeposits[account]?.totals.stalkNotGerminating ?? 0);
@@ -62,6 +63,7 @@ async function accountStruct(account) {
     0: getAccountField(account)
   };
 
+  const germinatingStalk = germinatingMapping(account, actualLastUpdate)
   const internalTokenBalance = getAccountInternalBalances(account);
 
   process.stdout.write(`\r${++walletProgress} / ${allAccounts.length}`);
@@ -71,7 +73,7 @@ async function accountStruct(account) {
     stalk,
     depositPermitNonces: 0n,
     tokenPermitNonces: 0n,
-    lastUpdate,
+    lastUpdate: currentSeason,
     lastSop,
     lastRain,
     // bytes32[16] _buffer_0,
@@ -110,7 +112,7 @@ function getAccountSilo(account) {
       depositIdList[l2Token(token)].push(depositId);
     }
     mowStatuses[l2Token(token)] = {
-      lastStem: allDeposits[account].totals[token].mowStem,
+      lastStem: allDeposits[account].totals[token].mowStem, // TODO: set this to the current stem tip (since everyone mowed)
       bdv: allDeposits[account].totals[token].bdv
     };
   }
@@ -133,7 +135,13 @@ function getAccountField(account) {
   return field;
 }
 
-async function germinatingMapping(account) {
+async function germinatingMapping(account, lastUpdate) {
+  // if the last mowed season is less than the current season - 1,
+  // then there are no germinating stalk and roots (as all germinating assets have finished).
+  if (lastUpdate < currentSeason - 1n) {
+    return {};
+  }
+  // Otherwise there is germinating stalk
   const [oddGerm, evenGerm] = await Promise.all([
     bs.s.a[account].farmerGerminating.odd,
     bs.s.a[account].farmerGerminating.even

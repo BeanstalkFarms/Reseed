@@ -374,7 +374,7 @@ async function rainStruct() {
     roots
   ] = await Promise.all([
     bs.s.r.pods,
-    bs.s.r.roots
+    bs.s.r.roots // TODO: roots scaling. Find amount of stalk on the same season?
   ]);
   return {
     pods,
@@ -513,7 +513,6 @@ async function germinatingMapping() {
     };
     return a;
   };
-  // TODO: need to verify or perhaps simply set this to the sum of user germinating (token amounts adjusted for l2)
   return {
     0: oddResults.reduce(reducer, {}),
     1: evenResults.reduce(reducer, {}),
@@ -521,25 +520,19 @@ async function germinatingMapping() {
 }
 
 async function unclaimedGerminatingMapping() {
-  // Enumerate all seasons since seedgauge deployment and save those which have unclaimed germinating
-  const startSeason = 21797;
+  // Only need to check the past 2 seasons. All other unclaimed germinating was claimed.
   const currentSeason = Number(await bs.s.season.current);
 
   const unclaimedGerminating = {};
-  const promiseGenerators = [];
-  for (let i = startSeason; i <= currentSeason; ++i) {
-    promiseGenerators.push(async () => {
-      const [stalk, roots] = await Promise.all([bs.s.unclaimedGerminating[i].stalk, bs.s.unclaimedGerminating[i].roots]);
-      if (stalk !== 0n) {
-        unclaimedGerminating[i] = {
-          stalk,
-          roots
-        };
-      }
-    });
+  for (let i = currentSeason - 1; i <= currentSeason; ++i) {
+    const stalk = await bs.s.unclaimedGerminating[i].stalk;
+    if (stalk !== 0n) {
+      unclaimedGerminating[i] = {
+        stalk,
+        roots: stalk * BigInt(10 ** 12)
+      };
+    }
   }
-
-  await runBatchPromises(promiseGenerators, 50);
   return unclaimedGerminating;
 }
 

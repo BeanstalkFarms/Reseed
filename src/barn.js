@@ -91,7 +91,8 @@ async function exportFert(block) {
     totals: {
       sumClaimed: await getActualFertilizedIndex(bs) - sumRinsable,
       sumRinsable,
-      sumUnrinsable
+      sumUnrinsable,
+      bpf: await bs.s.bpf
     }
   }
 
