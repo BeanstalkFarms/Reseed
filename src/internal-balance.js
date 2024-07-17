@@ -3,8 +3,8 @@ const { BEANSTALK } = require('./contracts/addresses.js');
 const { providerThenable } = require('./contracts/provider');
 const storageLayout = require('./contracts/abi/storageLayout.json');
 const ContractStorage = require('@beanstalk/contract-storage');
-const { getWithdrawals, getCurrentInternalBalances, getUnpickedUnripe, getL2TokenAmount } = require('./utils/balances/balances-util.js');
-const { WHITELISTED, WHITELISTED_LP } = require('./utils/silo/silo-util.js');
+const { getWithdrawals, getCurrentInternalBalances, getUnpickedUnripe, getL2TokenAmount, getRinsableUserSprouts } = require('./utils/balances/balances-util.js');
+const { WHITELISTED } = require('./utils/silo/silo-util.js');
 const { bigintHex } = require('./utils/json-formatter.js');
 
 const BATCH_SIZE = 100;
@@ -42,13 +42,16 @@ async function exportInternalBalances(block) {
   const unpicked = await getUnpickedUnripe(bs, BLOCK, BATCH_SIZE);
   const unpickedByToken = Object.values(unpicked).reduce(reducer, {});
 
-  // TODO: unclaimed sprouts
+  console.log('Getting user rinsable sprouts...');
+  const rinsableSprouts = getRinsableUserSprouts(BLOCK);
+  const rinsableByToken = Object.values(rinsableSprouts).reduce(reducer, {});
 
   // Add withdrawals/unpicked into internal balances
   const allAccounts = [...new Set([
     ...Object.keys(currentInternalBalances),
     ...Object.keys(withdrawals),
-    ...Object.keys(unpicked)
+    ...Object.keys(unpicked),
+    ...Object.keys(rinsableSprouts)
   ])];
   const breakdown = { 
     accounts: {},
@@ -60,12 +63,14 @@ async function exportInternalBalances(block) {
       const sum =
         (currentInternalBalances[account]?.[token] ?? 0n) +
         (withdrawals[account]?.[token] ?? 0n) +
-        (unpicked[account]?.[token] ?? 0n);
+        (unpicked[account]?.[token] ?? 0n) +
+        (rinsableSprouts[account]?.[token] ?? 0n);
       if (sum > 0n) {
         breakdown.accounts[account][token] = {
           currentInternal: currentInternalBalances[account]?.[token] ?? 0n,
           withdrawn: withdrawals[account]?.[token] ?? 0n,
           unpicked: unpicked[account]?.[token] ?? 0n,
+          rinsable: rinsableSprouts[account]?.[token] ?? 0n,
           total: sum,
           // Scales lp token amounts according to the amount minted on l2
           l2total: await getL2TokenAmount(token, sum, BLOCK)
@@ -79,11 +84,13 @@ async function exportInternalBalances(block) {
     const sum =
       (balancesByToken[token] ?? 0n) +
       (withdrawalsByToken[token] ?? 0n) +
-      (unpickedByToken[token] ?? 0n);
+      (unpickedByToken[token] ?? 0n) +
+      (rinsableByToken[token] ?? 0n);
     breakdown.totals[token] = {
       currentInternal: balancesByToken[token] ?? 0n,
       withdrawn: withdrawalsByToken[token] ?? 0n,
       unpicked: unpickedByToken[token] ?? 0n,
+      rinsable: rinsableByToken[token] ?? 0n,
       total: sum,
       l2total: Object.keys(breakdown.accounts).reduce((a, next) => a + (breakdown.accounts[next][token]?.l2total ?? 0n), 0n)
     }

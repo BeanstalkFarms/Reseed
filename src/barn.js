@@ -86,14 +86,17 @@ async function exportFert(block) {
     console.log(`[WARNING]: Fertilizer amount mismatch detected: ${sumFertEvent} | ${sumFertContract}`);
   }
 
-  balances.totals = {
-    sumClaimed: await getActualFertilizedIndex(bs) - sumRinsable,
-    sumRinsable,
-    sumUnrinsable
-  };
+  const results = {
+    accounts: balances,
+    totals: {
+      sumClaimed: await getActualFertilizedIndex(bs) - sumRinsable,
+      sumRinsable,
+      sumUnrinsable
+    }
+  }
 
   const outFile = `results/fert${BLOCK}.json`;
-  await fs.promises.writeFile(outFile, JSON.stringify(balances, bigintDecimal, 2));
+  await fs.promises.writeFile(outFile, JSON.stringify(results, bigintDecimal, 2));
   console.log(`Fertilizer balances exported to ${outFile}`);
 
 }

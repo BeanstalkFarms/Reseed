@@ -1,6 +1,6 @@
 const fs = require('fs');
 const { runBatchPromises } = require('../batch-promise');
-const { BEANWETH, BEANWSTETH, UNRIPE_BEAN, UNRIPE_LP, BEAN3CRV } = require('../../contracts/addresses.js');
+const { BEAN, BEANWETH, BEANWSTETH, UNRIPE_BEAN, UNRIPE_LP, BEAN3CRV } = require('../../contracts/addresses.js');
 const { WHITELISTED, WHITELISTED_LP } = require('../silo/silo-util.js');
 const { createAsyncERC20ContractGetter } = require('../../contracts/contract.js');
 
@@ -104,8 +104,19 @@ async function getUnpickedUnripe(bs, BLOCK, BATCH_SIZE) {
   return unpicked;
 }
 
-async function getUnclaimedSprouts(bs, BLOCK, BATCH_SIZE) {
-
+// Returns in the same format as the above methods for ease of use. In practice only Beans can be rinsed.
+function getRinsableUserSprouts(BLOCK) {
+  const fertData = JSON.parse(fs.readFileSync(`results/fert${BLOCK}.json`)).accounts;
+  return Object.keys(fertData).reduce((a, next) => {
+    let sumRinsable = 0n;
+    for (const fertId in fertData[next]) {
+      sumRinsable += BigInt(fertData[next][fertId].rinsableSprouts);
+    }
+    a[next] = {
+      [BEAN]: sumRinsable
+    };
+    return a;
+  }, {});
 }
 
 // Using the percentage of the given amount against the total token supply on Ethereum,
@@ -146,5 +157,6 @@ module.exports = {
   getCurrentInternalBalances,
   getWithdrawals,
   getUnpickedUnripe,
+  getRinsableUserSprouts,
   getL2TokenAmount
 }
