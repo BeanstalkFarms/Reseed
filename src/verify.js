@@ -20,8 +20,8 @@ async function checkDepositedAmounts() {
   const sumInternal = {};
   const sumUnpicked = {};
   const allDeposits = JSON.parse(fs.readFileSync(`results/deposits${BLOCK}.json`));
-  for (const account in allDeposits) {
-    for (const token in allDeposits[account].totals) {
+  for (const account in allDeposits.accounts) {
+    for (const token in allDeposits.accounts[account].totals) {
       if (!token.startsWith("0x")) {
         continue;
       }
@@ -32,8 +32,8 @@ async function checkDepositedAmounts() {
         };
         sumInternal[token] = 0n;
       }
-      totalDeposited[token].amount += BigInt(allDeposits[account].totals[token].amount);
-      totalDeposited[token].bdv += BigInt(allDeposits[account].totals[token].bdv);
+      totalDeposited[token].amount += BigInt(allDeposits.accounts[account].totals[token].amount);
+      totalDeposited[token].bdv += BigInt(allDeposits.accounts[account].totals[token].bdv);
     }
   }
 

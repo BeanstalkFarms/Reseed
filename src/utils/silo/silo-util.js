@@ -1,3 +1,4 @@
+const fs = require('fs');
 const { tokenEq } = require("../token");
 const { BEAN, BEANWETH, BEANWSTETH, BEAN3CRV, UNRIPE_BEAN, UNRIPE_LP } = require('../../contracts/addresses.js');
 
@@ -54,6 +55,14 @@ async function getBeanLusdUnripeLP(account, season, bs) {
   }
 }
 
+function getSumOfUserTotals(block) {
+  const deposits = JSON.parse(fs.readFileSync(`results/deposits${block}.json`));
+  return {
+    stalkMinusGerminating: BigInt(deposits.totals.stalkMinusGerminating),
+    stalkInclGerminating: BigInt(deposits.totals.stalkInclGerminating)
+  }
+}
+
 module.exports = {
   packAddressAndStem,
   seasonToStem,
@@ -61,6 +70,7 @@ module.exports = {
   getBeanEthUnripeLP,
   getBean3CrvUnripeLP,
   getBeanLusdUnripeLP,
+  getSumOfUserTotals,
   WHITELISTED: [BEAN, BEANWETH, BEANWSTETH, BEAN3CRV, UNRIPE_BEAN, UNRIPE_LP],
   WHITELISTED_LP: [BEANWETH, BEAN3CRV, BEANWSTETH]
 }

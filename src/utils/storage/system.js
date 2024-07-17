@@ -5,7 +5,7 @@ const { getActualActiveFertilizer, getActualFertilizedIndex, getActualUnfertiliz
 const { tokenEq, l2Token } = require('../token.js');
 const { createAsyncERC20ContractGetter } = require('../../contracts/contract.js');
 const { runBatchPromises } = require('../batch-promise.js');
-const { WHITELISTED } = require('../silo/silo-util.js');
+const { WHITELISTED, getSumOfUserTotals } = require('../silo/silo-util.js');
 const { getL2TokenAmount, l2TokenMapping } = require('../balances/balances-util.js');
 
 let BLOCK;
@@ -167,14 +167,10 @@ function getInternalBalanceMapping() {
 
 async function siloStruct() {
   console.log('Gathering silo info...');
-  // TODO: stalk/roots should be derived from the sum of user deposits instead
-  const [
-    stalk,
-    roots
-  ] = await Promise.all([
-    bs.s.s.stalk,
-    bs.s.s.roots
-  ]);
+
+  const stalk = getSumOfUserTotals(BLOCK).stalkMinusGerminating;
+  const roots = stalk * BigInt(10 ** 12);
+
   const balances = {};
   const assetSilos = await Promise.all(WHITELISTED.map(assetSiloStruct));
   for (let i = 0; i < assetSilos.length; ++i) {

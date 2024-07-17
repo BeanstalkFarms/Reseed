@@ -281,7 +281,7 @@ async function checkWallet(results, deposits, depositor) {
   }
 
   // Write total stalk/germinating to the deposits object so it can be available in a single file
-  deposits[depositor].totals.stalkNotGerminating = netDepositorStalk - contractStalk.germinating;
+  deposits[depositor].totals.stalkMinusGerminating = netDepositorStalk - contractStalk.germinating;
   deposits[depositor].totals.stalkInclGerminating = netDepositorStalk;
 
   netSystemStalk += netDepositorStalk;
@@ -381,8 +381,22 @@ async function exportDeposits(block) {
   console.log(`Checking ${Object.keys(deposits).length} wallets...`);
   const results = await checkWallets(deposits);
 
+  // Add global totals to deposits object before writing to out file
+  const depositsOutput = {
+    accounts: deposits,
+    totals: Object.keys(deposits).reduce((a, next) => {
+      a.stalkMinusGerminating += deposits[next].totals.stalkMinusGerminating;
+      a.stalkInclGerminating += deposits[next].totals.stalkInclGerminating;
+      return a;
+    }, {
+      stalkMinusGerminating: 0n,
+      stalkInclGerminating: 0n,
+      stemTips
+    })
+  };
+
   const outFile = `results/deposits${BLOCK}.json`;
-  await fs.promises.writeFile(outFile, JSON.stringify(deposits, bigintDecimal, 2));
+  await fs.promises.writeFile(outFile, JSON.stringify(depositsOutput, bigintDecimal, 2));
   console.log(`\rWrote results to ${outFile}`);
 
   const discrepancyFile = `results/deposit-discrepancies${BLOCK}.json`;

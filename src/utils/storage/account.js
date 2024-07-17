@@ -28,7 +28,7 @@ async function allAccountStructs(options) {
   allPlots = JSON.parse(fs.readFileSync(`results/pods${BLOCK}.json`));
   allBalances = JSON.parse(fs.readFileSync(`results/internal-balances${BLOCK}.json`));
 
-  allAccounts = [...new Set([...Object.keys(allDeposits), ...Object.keys(allPlots), ...Object.keys(allBalances.accounts)])];
+  allAccounts = [...new Set([...Object.keys(allDeposits.accounts), ...Object.keys(allPlots), ...Object.keys(allBalances.accounts)])];
 
   const promiseGenerators = allAccounts.map(a => async () => ({
     input: a,
@@ -39,7 +39,7 @@ async function allAccountStructs(options) {
   await runBatchPromises(promiseGenerators, 50, (result) => {
     accountsStorage[result.input] = result.output;
   });
-  console.log('Finished accounts info');
+  console.log('\rFinished accounts info');
   return accountsStorage;
 }
 
@@ -55,7 +55,7 @@ async function accountStruct(account) {
     bs.s.a[account].lastRain
   ]);
 
-  const stalk = BigInt(allDeposits[account]?.totals.stalkNotGerminating ?? 0);
+  const stalk = BigInt(allDeposits.accounts[account]?.totals.stalkMinusGerminating ?? 0);
   const roots = stalk * BigInt(10 ** 12);
 
   const { deposits, depositIdList, mowStatuses } = getAccountSilo(account);
@@ -95,25 +95,26 @@ function getAccountSilo(account) {
   const deposits = {};
   const depositIdList = {};
   const mowStatuses = {};
-  for (const token in allDeposits[account]) {
+  for (const token in allDeposits.accounts[account]) {
     if (token === 'totals') {
       continue;
     }
     if (!depositIdList[l2Token(token)]) {
       depositIdList[l2Token(token)] = [];
     }
-    for (const stem in allDeposits[account][token]) {
-      const deposit = allDeposits[account][token][stem];
+    for (const stem in allDeposits.accounts[account][token]) {
+      const deposit = allDeposits.accounts[account][token][stem];
       const depositId = packAddressAndStem(l2Token(token), stem);
       deposits[depositId] = {
-        amount: deposit.l2Amount,
-        bdv: deposit.bdv
+        amount: BigInt(deposit.l2Amount),
+        bdv: BigInt(deposit.bdv)
       };
       depositIdList[l2Token(token)].push(depositId);
     }
     mowStatuses[l2Token(token)] = {
-      lastStem: allDeposits[account].totals[token].mowStem, // TODO: set this to the current stem tip (since everyone mowed)
-      bdv: allDeposits[account].totals[token].bdv
+      // Sets to the stem tip, since all deposits were mown.
+      lastStem: BigInt(allDeposits.totals.stemTips[token]),
+      bdv: BigInt(allDeposits.accounts[account].totals[token].bdv)
     };
   }
   return {
