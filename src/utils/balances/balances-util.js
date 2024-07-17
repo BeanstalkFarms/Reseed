@@ -78,7 +78,7 @@ async function getUnpickedUnripe(bs, BLOCK, BATCH_SIZE) {
   const promiseFactory = (token, account, merkle) => async () => {
     if (!(await bs.s.unripeClaimed[token][account])) {
       return {
-        account,
+        account: account.toLowerCase(),
         token,
         amount: BigInt(merkle[account].amount)
       };
