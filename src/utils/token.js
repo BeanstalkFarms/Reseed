@@ -1,4 +1,4 @@
-const { BEANSTALK, BEAN, BEANWETH, BEANWSTETH, BEAN3CRV, UNRIPE_BEAN, UNRIPE_LP } = require('../contracts/addresses.js');
+const { BEAN, BEANWETH, BEANWSTETH, BEAN3CRV, UNRIPE_BEAN, UNRIPE_LP } = require('../contracts/addresses.js');
 
 const L2_TOKEN_MAPPING = { // TODO: once contracts deployed on l2
   [BEAN]: '0x1111111111111111111111111111111111111111',

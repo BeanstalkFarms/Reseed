@@ -167,14 +167,13 @@ function getInternalBalanceMapping() {
 
 async function siloStruct() {
   console.log('Gathering silo info...');
+  // TODO: stalk/roots should be derived from the sum of user deposits instead
   const [
     stalk,
-    roots,
-    earnedBeans
+    roots
   ] = await Promise.all([
     bs.s.s.stalk,
-    bs.s.s.roots,
-    bs.s.earnedBeans
+    bs.s.s.roots
   ]);
   const balances = {};
   const assetSilos = await Promise.all(WHITELISTED.map(assetSiloStruct));
@@ -203,7 +202,7 @@ async function siloStruct() {
   return {
     stalk,
     roots,
-    earnedBeans,
+    earnedBeans: 0n, // Earned beans were planted
     balances,
     assetSettings,
     unripeSettings,
@@ -389,11 +388,11 @@ async function assetSiloStruct(token) {
     deposited,
     depositedBdv
   ] = await Promise.all([
-    bs.s.siloBalances[token].deposited, // TODO: l2 token scaling
+    bs.s.siloBalances[token].deposited,
     bs.s.siloBalances[token].depositedBdv
   ]);
   return {
-    deposited,
+    deposited: await getL2TokenAmount(token, deposited, BLOCK),
     depositedBdv
   }
 }
@@ -560,7 +559,7 @@ async function migrationStruct() {
 }
 
 async function seedGaugeSettingsStruct() {
-  // TODO: these should be set to something
+  // TODO: these should be set to something?
   return {
     maxBeanMaxLpGpPerBdvRatio: 0n,
     minBeanMaxLpGpPerBdvRatio: 0n,
