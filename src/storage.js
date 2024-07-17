@@ -9,6 +9,7 @@ const storageLayout = require('./contracts/abi/storageLayout.json');
 const ContractStorage = require('@beanstalk/contract-storage');
 const { systemStruct } = require('./utils/storage/system.js');
 const { allAccountStructs } = require('./utils/storage/account.js');
+const { fertilizerStorageBalances } = require('./utils/storage/fertilizer.js');
 
 let BLOCK;
 let beanstalk;
@@ -29,7 +30,6 @@ async function exportStorage(block) {
   // Consider combining into a single out file?
   const systemOutFile = `results/storage-system${BLOCK}.json`;
   await fs.promises.writeFile(systemOutFile, JSON.stringify(system, bigintHex, 2));
-
   console.log(`\rWrote system storage to ${systemOutFile}`);
 
   const accounts = await allAccountStructs({
@@ -39,8 +39,13 @@ async function exportStorage(block) {
 
   const accountOutFile = `results/storage-accounts${BLOCK}.json`;
   await fs.promises.writeFile(accountOutFile, JSON.stringify(accounts, bigintHex, 2));
-
   console.log(`\rWrote account storage to ${accountOutFile}`);
+
+  const fertilizer = fertilizerStorageBalances(BLOCK);
+  const fertilizerOutFile = `results/storage-fertilizer${BLOCK}.json`;
+  await fs.promises.writeFile(fertilizerOutFile, JSON.stringify(fertilizer, bigintHex, 2));
+  console.log(`\rWrote fertilizer storage to ${fertilizerOutFile}`);
+
 
 }
 
