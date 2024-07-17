@@ -1,6 +1,8 @@
 const fs = require('fs');
 const { packAddressAndStem } = require('../silo/silo-util');
 const { runBatchPromises } = require('../batch-promise');
+const { l2TokenMapping } = require('../balances/balances-util');
+const { l2Token } = require('../token');
 
 let BLOCK;
 let bs;
@@ -95,19 +97,19 @@ function getAccountSilo(account) {
     if (token === 'totals') {
       continue;
     }
-    if (!depositIdList[token]) {
-      depositIdList[token] = [];
+    if (!depositIdList[l2Token(token)]) {
+      depositIdList[l2Token(token)] = [];
     }
     for (const stem in allDeposits[account][token]) {
       const deposit = allDeposits[account][token][stem];
-      const depositId = packAddressAndStem(token, stem);
+      const depositId = packAddressAndStem(l2Token(token), stem);
       deposits[depositId] = {
         amount: deposit.l2Amount,
         bdv: deposit.bdv
       };
-      depositIdList[token].push(depositId);
+      depositIdList[l2Token(token)].push(depositId);
     }
-    mowStatuses[token] = {
+    mowStatuses[l2Token(token)] = {
       lastStem: allDeposits[account].totals[token].mowStem,
       bdv: allDeposits[account].totals[token].bdv
     };
@@ -145,7 +147,7 @@ async function germinatingMapping(account) {
 function getAccountInternalBalances(account) {
   const internalTokenBalance = {};
   for (const token in allBalances.accounts[account]) {
-    internalTokenBalance[token] = BigInt(allBalances.accounts[account][token].l2total);
+    internalTokenBalance[l2Token(token)] = BigInt(allBalances.accounts[account][token].l2total);
   }
   return internalTokenBalance;
 }

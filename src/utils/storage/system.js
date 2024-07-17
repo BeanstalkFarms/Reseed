@@ -2,11 +2,11 @@ const fs = require('fs');
 const { plentySeasons } = require('../../../inputs/plenty-seasons.js');
 const { BEANSTALK, BEAN, BEANWETH, BEANWSTETH, BEAN3CRV, UNRIPE_BEAN, UNRIPE_LP } = require('../../contracts/addresses.js');
 const { getActualActiveFertilizer, getActualFertilizedIndex, getActualUnfertilizedIndex, getClaimedSprouts } = require('../barn/barn-util.js');
-const { tokenEq } = require('../token.js');
+const { tokenEq, l2Token } = require('../token.js');
 const { createAsyncERC20ContractGetter } = require('../../contracts/contract.js');
 const { runBatchPromises } = require('../batch-promise.js');
 const { WHITELISTED } = require('../silo/silo-util.js');
-const { getL2TokenAmount } = require('../balances/balances-util.js');
+const { getL2TokenAmount, l2TokenMapping } = require('../balances/balances-util.js');
 
 let BLOCK;
 let bs;
@@ -44,17 +44,17 @@ async function systemStruct(options) {
   const internalTokenBalanceTotal = getInternalBalanceMapping();
 
   const wellOracleSnapshots = {
-    [BEANWETH]: beanWethSnapshot,
-    [BEANWSTETH]: beanWstethSnapshot
+    [l2Token(BEANWETH)]: beanWethSnapshot,
+    [l2Token(BEANWSTETH)]: beanWstethSnapshot
   };
 
   const twaReserves = {
-    [BEANWETH]: beanWethTwaReserves,
-    [BEANWSTETH]: beanWstethTwaReserves
+    [l2Token(BEANWETH)]: beanWethTwaReserves,
+    [l2Token(BEANWSTETH)]: beanWstethTwaReserves
   };
 
   const usdTokenPrice = {
-    [BEANWETH]: 1
+    [l2Token(BEANWETH)]: 1
     // TODO: BEANwstETH?
   };
 
@@ -160,7 +160,7 @@ function getInternalBalanceMapping() {
   const balancesFile = JSON.parse(fs.readFileSync(`results/internal-balances${BLOCK}.json`));
   const internalBalances = {};
   for (const token in balancesFile.totals) {
-    internalBalances[token] = BigInt(balancesFile.totals[token].l2total);
+    internalBalances[l2Token(token)] = BigInt(balancesFile.totals[token].l2total);
   }
   return internalBalances;
 }
@@ -179,13 +179,13 @@ async function siloStruct() {
   const balances = {};
   const assetSilos = await Promise.all(WHITELISTED.map(assetSiloStruct));
   for (let i = 0; i < assetSilos.length; ++i) {
-    balances[WHITELISTED[i]] = assetSilos[i];
+    balances[l2Token(WHITELISTED[i])] = assetSilos[i];
   }
 
   const assetSettings = {};
   const settingsStructs = await Promise.all(WHITELISTED.map(assetSettingsStruct));
   for (let i = 0; i < settingsStructs.length; ++i) {
-    assetSettings[WHITELISTED[i]] = settingsStructs[i];
+    assetSettings[l2Token(WHITELISTED[i])] = settingsStructs[i];
   }
 
   const [
@@ -413,7 +413,7 @@ async function whitelistStatusStructs() {
       bs.s.whitelistStatuses[i].isWhitelistedWell
     ]);
     whitelistStatuses.push({
-      token,
+      token: l2Token(token),
       isWhitelisted,
       isWhitelistedLp,
       isWhitelistedWell,
@@ -474,12 +474,12 @@ async function unripeSettingsStructs() {
     bs.s.u[UNRIPE_LP].balanceOfUnderlying
   ]);
   return {
-    [UNRIPE_BEAN]: {
-      underlyingToken: urbeanUnderlyingToken,
+    [l2Token(UNRIPE_BEAN)]: {
+      underlyingToken: l2Token(urbeanUnderlyingToken),
       balanceOfUnderlying: urbeanBalanceOfUnderlying
     },
-    [UNRIPE_LP]: {
-      underlyingToken: urlpUnderlyingToken,
+    [l2Token(UNRIPE_LP)]: {
+      underlyingToken: l2Token(urlpUnderlyingToken),
       balanceOfUnderlying: urlpBalanceOfUnderlying
     }
   };
@@ -498,12 +498,12 @@ async function twaReservesStruct(pool) {
 
 async function germinatingMapping() {
   const oddResults = await Promise.all(WHITELISTED.map(async (token) => ({
-    token,
+    token: l2Token(token),
     amount: await getL2TokenAmount(token, await bs.s.oddGerminating.deposited[token].amount, BLOCK),
     bdv: await bs.s.oddGerminating.deposited[token].bdv,
   })));
   const evenResults = await Promise.all(WHITELISTED.map(async (token) => ({
-    token,
+    token: l2Token(token),
     amount: await getL2TokenAmount(token, await bs.s.evenGerminating.deposited[token].amount, BLOCK),
     bdv: await bs.s.evenGerminating.deposited[token].bdv,
   })));
@@ -514,8 +514,7 @@ async function germinatingMapping() {
     };
     return a;
   };
-  // TODO: needs to be the sum of user germinating? These values will automatically clear in 2 seasons
-  // but still perhaps need to be equal
+  // TODO: need to verify or perhaps simply set this to the sum of user germinating (token amounts adjusted for l2)
   return {
     0: oddResults.reduce(reducer, {}),
     1: evenResults.reduce(reducer, {}),

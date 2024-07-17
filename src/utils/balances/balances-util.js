@@ -3,6 +3,7 @@ const { runBatchPromises } = require('../batch-promise');
 const { BEAN, BEANWETH, BEANWSTETH, UNRIPE_BEAN, UNRIPE_LP, BEAN3CRV } = require('../../contracts/addresses.js');
 const { WHITELISTED, WHITELISTED_LP } = require('../silo/silo-util.js');
 const { createAsyncERC20ContractGetter } = require('../../contracts/contract.js');
+const { l2Token } = require('../token.js');
 
 async function getCurrentInternalBalances(bs, BLOCK, BATCH_SIZE) {
   const balancesData = fs.readFileSync(`inputs/internal-balances${BLOCK}.csv`, 'utf8');
@@ -123,12 +124,11 @@ function getRinsableUserSprouts(BLOCK) {
 // returns the corresponding share of tokens on L2.
 const l1TokenSupply = {};
 const l2TokenSupply = {};
-const tokenMapping = { // TODO once contracts deployed on l2
-  [BEANWETH] : 'l2 beanweth here',
-  [BEANWSTETH] : 'l2 beanwsteth here',
-  [BEAN3CRV] : 'l2 stable lp token here'
-}
 async function getL2TokenAmount(token, amount, BLOCK) {
+
+  if (amount === 0n) {
+    return 0n;
+  }
 
   if (!l1TokenSupply[token]) {
     const tokenContract = await createAsyncERC20ContractGetter(token)();
@@ -138,14 +138,14 @@ async function getL2TokenAmount(token, amount, BLOCK) {
 
   let l2amount;
   if (WHITELISTED_LP.includes(token)) {
-    const l2Token = tokenMapping[token];
-    if (!l2TokenSupply[l2Token]) {
+    const l2TokenAddr = l2Token(token);
+    if (!l2TokenSupply[l2TokenAddr]) {
       // TODO: uncomment once contracts deployed on l2
       // const tokenContract = await createAsyncERC20ContractGetter(token, { provider: arbProviderThenable })();
-      // l2TokenSupply[l2Token] = BigInt(await tokenContract.callStatic.totalSupply({ blockTag: BLOCK }));
-      l2TokenSupply[l2Token] = BigInt(10 ** 7);
+      // l2TokenSupply[l2TokenAddr] = BigInt(await tokenContract.callStatic.totalSupply({ blockTag: BLOCK }));
+      l2TokenSupply[l2TokenAddr] = BigInt(10 ** 7);
     }
-    l2amount = BigInt(Math.floor(l1percent * Number(l2TokenSupply[l2Token])));
+    l2amount = BigInt(Math.floor(l1percent * Number(l2TokenSupply[l2TokenAddr])));
   } else {
     // Amount shouldnt change for non lp
     l2amount = amount;
