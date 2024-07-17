@@ -1,11 +1,12 @@
 const fs = require('fs');
 const { plentySeasons } = require('../../../inputs/plenty-seasons.js');
-const { BEANSTALK, BEAN, BEANWETH, BEAN3CRV, UNRIPE_BEAN, UNRIPE_LP } = require('../../contracts/addresses.js');
+const { BEANSTALK, BEAN, BEANWETH, BEANWSTETH, BEAN3CRV, UNRIPE_BEAN, UNRIPE_LP } = require('../../contracts/addresses.js');
 const { getActualActiveFertilizer, getActualFertilizedIndex, getActualUnfertilizedIndex, getClaimedSprouts } = require('../barn/barn-util.js');
 const { tokenEq } = require('../token.js');
 const { createAsyncERC20ContractGetter } = require('../../contracts/contract.js');
 const { runBatchPromises } = require('../batch-promise.js');
 const { WHITELISTED } = require('../silo/silo-util.js');
+const { getL2TokenAmount } = require('../balances/balances-util.js');
 
 let BLOCK;
 let bs;
@@ -23,7 +24,9 @@ async function systemStruct(options) {
     soil,
     beanSown,
     beanWethSnapshot,
+    beanWstethSnapshot,
     beanWethTwaReserves,
+    beanWstethTwaReserves,
     casesV2
   ] = await Promise.all([
     bs.s.paused,
@@ -31,21 +34,23 @@ async function systemStruct(options) {
     bs.s.f.soil,
     bs.s.f.beanSown,
     bs.s.wellOracleSnapshots[BEANWETH],
+    bs.s.wellOracleSnapshots[BEANWSTETH],
     twaReservesStruct(BEANWETH),
-    bs.s.deprecated2// bs.s.casesV2 TODO: using shorter array because its faster for testing
+    twaReservesStruct(BEANWSTETH),
+    bs.s.deprecated2// bs.s.casesV2 TODO: using shorter array temporarily because its faster for testing
   ]);
 
   const { podListings, podOrders } = getMarketMappings();
   const internalTokenBalanceTotal = getInternalBalanceMapping();
 
   const wellOracleSnapshots = {
-    [BEANWETH]: beanWethSnapshot
-    // TODO: BEANwstETH
+    [BEANWETH]: beanWethSnapshot,
+    [BEANWSTETH]: beanWstethSnapshot
   };
 
   const twaReserves = {
-    [BEANWETH]: beanWethTwaReserves
-    // TODO: BEANwstETH
+    [BEANWETH]: beanWethTwaReserves,
+    [BEANWSTETH]: beanWstethTwaReserves
   };
 
   const usdTokenPrice = {
@@ -494,21 +499,23 @@ async function twaReservesStruct(pool) {
 async function germinatingMapping() {
   const oddResults = await Promise.all(WHITELISTED.map(async (token) => ({
     token,
-    amount: await bs.s.oddGerminating.deposited[token].amount,
+    amount: await getL2TokenAmount(token, await bs.s.oddGerminating.deposited[token].amount, BLOCK),
     bdv: await bs.s.oddGerminating.deposited[token].bdv,
   })));
   const evenResults = await Promise.all(WHITELISTED.map(async (token) => ({
     token,
-    amount: await bs.s.evenGerminating.deposited[token].amount,
+    amount: await getL2TokenAmount(token, await bs.s.evenGerminating.deposited[token].amount, BLOCK),
     bdv: await bs.s.evenGerminating.deposited[token].bdv,
   })));
   const reducer = (a, next) => {
     a[next.token] = {
-      amount: next.amount, // TODO: need to do token amount scaling here also
+      amount: next.amount,
       bdv: next.bdv
     };
     return a;
   };
+  // TODO: needs to be the sum of user germinating? These values will automatically clear in 2 seasons
+  // but still perhaps need to be equal
   return {
     0: oddResults.reduce(reducer, {}),
     1: evenResults.reduce(reducer, {}),
@@ -545,11 +552,10 @@ async function migrationStruct() {
   const beanstalkBalance = BigInt(await beanToken.callStatic.balanceOf(BEANSTALK, {blockTag: BLOCK}));
   const beanethBalance = BigInt(await beanToken.callStatic.balanceOf(BEANWETH, {blockTag: BLOCK}));
   const bean3crvBalance = BigInt(await beanToken.callStatic.balanceOf(BEAN3CRV, {blockTag: BLOCK}));
-  // const beanwstethBalance = BigInt(await beanToken.callStatic.balanceOf(BEANWETH, {blockTag: BLOCK}));
+  const beanwstethBalance = BigInt(await beanToken.callStatic.balanceOf(BEANWSTETH, {blockTag: BLOCK}));
 
-  // TODO: BEANwstETH
   return {
-    migratedL1Beans: totalSupply - beanstalkBalance - beanethBalance - bean3crvBalance /*- beanwstethBalance*/,
+    migratedL1Beans: totalSupply - beanstalkBalance - beanethBalance - bean3crvBalance - beanwstethBalance,
     // bytes32[4] _buffer_
   };
 }

@@ -1,6 +1,6 @@
 const fs = require('fs');
 const { runBatchPromises } = require('../batch-promise');
-const { BEANWETH, UNRIPE_BEAN, UNRIPE_LP, BEAN3CRV } = require('../../contracts/addresses.js');
+const { BEANWETH, BEANWSTETH, UNRIPE_BEAN, UNRIPE_LP, BEAN3CRV } = require('../../contracts/addresses.js');
 const { WHITELISTED, WHITELISTED_LP } = require('../silo/silo-util.js');
 const { createAsyncERC20ContractGetter } = require('../../contracts/contract.js');
 
@@ -104,13 +104,17 @@ async function getUnpickedUnripe(bs, BLOCK, BATCH_SIZE) {
   return unpicked;
 }
 
+async function getUnclaimedSprouts(bs, BLOCK, BATCH_SIZE) {
+
+}
+
 // Using the percentage of the given amount against the total token supply on Ethereum,
 // returns the corresponding share of tokens on L2.
 const l1TokenSupply = {};
 const l2TokenSupply = {};
 const tokenMapping = { // TODO once contracts deployed on l2
   [BEANWETH] : 'l2 beanweth here',
-  // [BEANWSTETH] : 'l2 beanwsteth here',
+  [BEANWSTETH] : 'l2 beanwsteth here',
   [BEAN3CRV] : 'l2 stable lp token here'
 }
 async function getL2TokenAmount(token, amount, BLOCK) {

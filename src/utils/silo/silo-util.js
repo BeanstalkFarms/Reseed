@@ -1,7 +1,5 @@
 const { tokenEq } = require("../token");
-const { BEAN, BEANWETH, BEAN3CRV, UNRIPE_BEAN, UNRIPE_LP } = require('../../contracts/addresses.js');
-const { createAsyncERC20ContractGetter } = require("../../contracts/contract.js");
-const { arbProviderThenable } = require("../../contracts/provider.js");
+const { BEAN, BEANWETH, BEANWSTETH, BEAN3CRV, UNRIPE_BEAN, UNRIPE_LP } = require('../../contracts/addresses.js');
 
 const AMOUNT_TO_BDV_BEAN_ETH = BigInt(119894802186829);
 const AMOUNT_TO_BDV_BEAN_3CRV = BigInt(992035);
@@ -63,6 +61,6 @@ module.exports = {
   getBeanEthUnripeLP,
   getBean3CrvUnripeLP,
   getBeanLusdUnripeLP,
-  WHITELISTED: [BEAN, BEANWETH, BEAN3CRV, UNRIPE_BEAN, UNRIPE_LP], // TODO wsteth
-  WHITELISTED_LP: [BEANWETH, BEAN3CRV] // TODO wsteth
+  WHITELISTED: [BEAN, BEANWETH, BEANWSTETH, BEAN3CRV, UNRIPE_BEAN, UNRIPE_LP],
+  WHITELISTED_LP: [BEANWETH, BEAN3CRV, BEANWSTETH]
 }

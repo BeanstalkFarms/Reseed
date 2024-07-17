@@ -42,6 +42,8 @@ async function exportInternalBalances(block) {
   const unpicked = await getUnpickedUnripe(bs, BLOCK, BATCH_SIZE);
   const unpickedByToken = Object.values(unpicked).reduce(reducer, {});
 
+  // TODO: unclaimed sprouts
+
   // Add withdrawals/unpicked into internal balances
   const allAccounts = [...new Set([
     ...Object.keys(currentInternalBalances),
