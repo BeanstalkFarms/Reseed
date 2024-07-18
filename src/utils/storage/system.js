@@ -11,6 +11,8 @@ const { getL2TokenAmount, l2TokenMapping } = require('../balances/balances-util.
 let BLOCK;
 let bs;
 
+let userSiloTotals;
+
 async function systemStruct(options) {
 
   console.log('Gathering system info...');
@@ -174,7 +176,8 @@ function getInternalBalanceMapping() {
 async function siloStruct() {
   console.log('Gathering silo info...');
 
-  const stalk = getSumOfUserTotals(BLOCK).stalkMinusGerminating;
+  userSiloTotals = getSumOfUserTotals(BLOCK);
+  const stalk = userSiloTotals.stalkMinusGerminating;
   const roots = stalk * BigInt(10 ** 12);
 
   const balances = {};
@@ -386,16 +389,17 @@ async function rainStruct() {
 }
 
 async function assetSiloStruct(token) {
-  const [
-    deposited,
-    depositedBdv
-  ] = await Promise.all([
-    bs.s.siloBalances[token].deposited, // TODO: this needs to be adjusted because it is incorrect for bean/urbean!
-    bs.s.siloBalances[token].depositedBdv
-  ]);
-  return {
-    deposited: await getL2TokenAmount(token, deposited, BLOCK),
-    depositedBdv
+  // Sum of account deposits rather than from bs.s.siloBalances[token]
+  if (userSiloTotals.tokens[l2Token(token)]) {
+    return {
+      deposited: await getL2TokenAmount(token, userSiloTotals.tokens[l2Token(token)].amount, BLOCK),
+      depositedBdv: userSiloTotals.tokens[l2Token(token)].bdv
+    }
+  } else {
+    return {
+      deposited: 0n,
+      depositedBdv: 0n
+    }
   }
 }
 

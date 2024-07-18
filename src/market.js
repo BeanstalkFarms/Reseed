@@ -203,4 +203,28 @@ async function exportMarket(block) {
 
 module.exports = {
   exportMarket
-}
+};
+
+// (() => {
+//   const before = JSON.parse(fs.readFileSync('results/market20000000.json'));
+//   const after = JSON.parse(fs.readFileSync('results/market20000001.json'));
+
+//   const allListings = [...new Set([...Object.keys(before.listings.beanstalk2), ...Object.keys(after.listings.beanstalk2)])]
+//   const allOrders = [...new Set([...Object.keys(before.orders.beanstalk2), ...Object.keys(after.orders.beanstalk2)])]
+//   for (const index of allListings) {
+//     if (!before.listings.beanstalk2[index]) {
+//       console.log(`Listing not found in before: ${index}`);
+//     }
+//     if (!after.listings.beanstalk2[index]) {
+//       console.log(`Listing not found in after: ${index}`);
+//     }
+//   }
+//   for (const hash of allOrders) {
+//     if (!before.orders.beanstalk2[hash]) {
+//       console.log(`Order not found in before: ${hash}`);
+//     }
+//     if (!after.orders.beanstalk2[hash]) {
+//       console.log(`Order not found in after: ${hash}`);
+//     }
+//   }
+// })()

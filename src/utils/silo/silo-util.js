@@ -55,11 +55,30 @@ async function getBeanLusdUnripeLP(account, season, bs) {
   }
 }
 
+// Returns a sum of user stalk and deposited token amounts, to be used as system-level values
 function getSumOfUserTotals(block) {
-  const deposits = JSON.parse(fs.readFileSync(`results/deposits${block}.json`));
+  const accountStorage = JSON.parse(fs.readFileSync(`results/storage-accounts${block}.json`));
+  const siloBalances = {};
+  let allStalk = 0n;
+  for (const account in accountStorage) {
+    for (const token in accountStorage[account].depositIdList) {
+      if (!siloBalances[token]) {
+        siloBalances[token] = {
+          amount: 0n,
+          bdv: 0n
+        }
+      }
+      for (let depositId of accountStorage[account].depositIdList[token]) {
+        depositId = BigInt(depositId);
+        siloBalances[token].amount += BigInt(accountStorage[account].deposits[depositId].amount);
+        siloBalances[token].bdv += BigInt(accountStorage[account].deposits[depositId].bdv);
+      }
+    }
+    allStalk += BigInt(accountStorage[account].stalk);
+  }
   return {
-    stalkMinusGerminating: BigInt(deposits.totals.stalkMinusGerminating),
-    stalkInclGerminating: BigInt(deposits.totals.stalkInclGerminating)
+    stalkMinusGerminating: allStalk,
+    tokens: siloBalances
   }
 }
 

@@ -129,23 +129,29 @@ function checkSystemVsAccounts() {
     }, 0n);
   }
 
-  // Compare against system values
-  for (const token in systemStorage.internalTokenBalanceTotal) {
-    if (BigInt(systemStorage.internalTokenBalanceTotal[token]) !== (internalTokenBalanceTotal[token] ?? 0n)) {
-      console.log(`[WARNING]: Internal balance sum mismatch for ${token}\n${BigInt(systemStorage.internalTokenBalanceTotal[token])}\n${(internalTokenBalanceTotal[token] ?? 0n)}\n`);
+  const check = (v1, v2, message) => {
+    if (v1 !== v2) {
+      console.log(message);
+      console.log(v1.toString(10));
+      console.log(v2.toString(10));
+      console.log((v1 - v2).toString(10));
+      console.log();
     }
   }
 
-  if (fieldEnd !== BigInt(systemStorage.fields[0].pods)) {
-    console.log(`[WARNING]: Field pod line length mismatch`);
+  // Compare against system values
+  for (const token in systemStorage.internalTokenBalanceTotal) {
+    check(BigInt(systemStorage.internalTokenBalanceTotal[token]), (internalTokenBalanceTotal[token] ?? 0n), `[WARNING]: Internal balance sum mismatch for ${token}`);
   }
+
+  check(fieldEnd, BigInt(systemStorage.fields[0].pods), '[WARNING]: Field pod line length mismatch');
 
   for (const token in systemStorage.silo.balances) {
     if (BigInt(systemStorage.silo.balances[token].deposited) !== (siloBalances[token]?.amount ?? 0n)) {
-      console.log(`[WARNING]: Silo deposited amount mismatch for ${token}\n${BigInt(systemStorage.silo.balances[token].deposited)}\n${(siloBalances[token]?.amount ?? 0n)}\n`);
+      check(BigInt(systemStorage.silo.balances[token].deposited), (siloBalances[token]?.amount ?? 0n), `[WARNING]: Silo deposited amount mismatch for ${token}`);
     }
     if (BigInt(systemStorage.silo.balances[token].depositedBdv) !== (siloBalances[token]?.bdv ?? 0n)) {
-      console.log(`[WARNING]: Silo deposited bdv mismatch for ${token}\n${BigInt(systemStorage.silo.balances[token].depositedBdv)}\n${(siloBalances[token]?.bdv ?? 0n)}\n`);
+      check(BigInt(systemStorage.silo.balances[token].depositedBdv), (siloBalances[token]?.bdv ?? 0n), `[WARNING]: Silo deposited bdv mismatch for ${token}`);
     }
   }
 
