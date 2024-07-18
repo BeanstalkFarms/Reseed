@@ -94,7 +94,7 @@ async function getMarketFromSubgraph() {
       }
     `,
     `block: {number: ${BLOCK}}`,
-    'status_in: [ACTIVE, FILLED_PARTIAL]',
+    'status_in: [ACTIVE]',
     ['id'],
     [0],
     'asc'
@@ -120,11 +120,12 @@ async function checkListing(listing) {
 
 // mapping(bytes32 => uint256) podOrders;
 async function checkOrder(order) {
-  const orderAmount = await bs.s.podOrders[order.id];
+  const originalOrderId = order.id.replace(/-\d+$/, '');
+  const orderAmount = await bs.s.podOrders[originalOrderId];
   if (orderAmount === BigInt(0)) {
-    console.log(`[WARNING]: A pod order for id ${order.id} was not found!`);
+    console.log(`[WARNING]: A pod order for id ${originalOrderId} was not found!`);
   }
-  marketStorage.orders.beanstalk2[order.id] = orderAmount;
+  marketStorage.orders.beanstalk2[originalOrderId] = orderAmount;
   marketStorage.orders.beanstalk3[hashOrder(order)] = orderAmount;
 
   process.stdout.write(`\r${++checkProgress}`);

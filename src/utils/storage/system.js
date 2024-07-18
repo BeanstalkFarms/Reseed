@@ -390,7 +390,7 @@ async function assetSiloStruct(token) {
     deposited,
     depositedBdv
   ] = await Promise.all([
-    bs.s.siloBalances[token].deposited,
+    bs.s.siloBalances[token].deposited, // TODO: this needs to be adjusted because it is incorrect for bean/urbean!
     bs.s.siloBalances[token].depositedBdv
   ]);
   return {

@@ -4,6 +4,10 @@ function absBigInt(x) {
   return x < 0 ? -x : x;
 }
 
+function maxBigInt(...args) {
+  return args.reduce((max, current) => current > max ? current : max);
+}
+
 const bigintHex = (_, value) => {
   if (typeof value === 'bigint') {
     const abs = absBigInt(value);
@@ -23,6 +27,8 @@ const addressChecksum = (str) => {
 }
 
 module.exports = {
+  absBigInt,
+  maxBigInt,
   bigintHex,
   bigintDecimal,
   addressChecksum
