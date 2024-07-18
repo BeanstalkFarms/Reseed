@@ -21,6 +21,9 @@ async function systemStruct(options) {
   const [
     paused,
     pausedAt,
+    reentrantStatus,
+    isFarm,
+    ownerCandidate,
     soil,
     beanSown,
     beanWethSnapshot,
@@ -31,6 +34,9 @@ async function systemStruct(options) {
   ] = await Promise.all([
     bs.s.paused,
     bs.s.pausedAt,
+    bs.s.reentrantStatus,
+    bs.s.isFarm,
+    bs.s.ownerCandidate,
     bs.s.f.soil,
     bs.s.f.beanSown,
     bs.s.wellOracleSnapshots[BEANWETH],
@@ -104,10 +110,10 @@ async function systemStruct(options) {
   return {
     paused: BigInt(paused),
     pausedAt,
-    reentrantStatus: 0n, // ?
-    isFarm: 0n, // ?
-    ownerCandidate: null, // address?
-    plenty: 0n, // ?
+    reentrantStatus,
+    isFarm,
+    ownerCandidate,
+    plenty: 0n,
     soil,
     beanSown,
     activeField: 0n,
