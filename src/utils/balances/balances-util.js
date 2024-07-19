@@ -143,7 +143,7 @@ async function getL2TokenAmount(token, amount, BLOCK) {
       // TODO: uncomment once contracts deployed on l2
       // const tokenContract = await createAsyncERC20ContractGetter(token, { provider: arbProviderThenable })();
       // l2TokenSupply[l2TokenAddr] = BigInt(await tokenContract.callStatic.totalSupply({ blockTag: BLOCK }));
-      l2TokenSupply[l2TokenAddr] = BigInt(10 ** 7);
+      l2TokenSupply[l2TokenAddr] = BigInt(10 ** 12);
     }
     l2amount = BigInt(Math.floor(l1percent * Number(l2TokenSupply[l2TokenAddr])));
   } else {

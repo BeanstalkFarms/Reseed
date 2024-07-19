@@ -82,6 +82,7 @@ async function systemStruct(options) {
   const oracleImplementation = {};
   const shipmentRoutes = [];
   const sop = {};
+  const rain = {};
 
   const [
     silo,
@@ -90,7 +91,6 @@ async function systemStruct(options) {
     season,
     weather,
     seedGauge,
-    rain,
     migration,
     seedGaugeSettings
   ] = await Promise.all([
@@ -100,7 +100,6 @@ async function systemStruct(options) {
     seasonStruct(),
     weatherStruct(),
     seedGaugeStruct(),
-    rainStruct(),
     migrationStruct(),
     seedGaugeSettingsStruct()
   ]);
@@ -372,34 +371,11 @@ async function seedGaugeStruct() {
   }
 }
 
-async function rainStruct() {
-  console.log('Gathering rain info...');
-  const [
-    pods,
-    roots
-  ] = await Promise.all([
-    bs.s.r.pods,
-    bs.s.r.roots // TODO: roots scaling. Find amount of stalk on the same season?
-  ]);
-  return {
-    pods,
-    roots
-    // bytes32[8] _buffer
-  }
-}
-
 async function assetSiloStruct(token) {
-  // Sum of account deposits rather than from bs.s.siloBalances[token]
-  if (userSiloTotals.tokens[l2Token(token)]) {
-    return {
-      deposited: await getL2TokenAmount(token, userSiloTotals.tokens[l2Token(token)].amount, BLOCK),
-      depositedBdv: userSiloTotals.tokens[l2Token(token)].bdv
-    }
-  } else {
-    return {
-      deposited: 0n,
-      depositedBdv: 0n
-    }
+  // Sum of account deposits rather than from bs.s.siloBalances[token]. Already converted into l2 token amounts
+  return {
+    deposited: userSiloTotals.tokens[l2Token(token)]?.amount ?? 0n,
+    depositedBdv: userSiloTotals.tokens[l2Token(token)]?.bdv ?? 0n
   }
 }
 
