@@ -165,19 +165,16 @@ function checkSystemVsAccounts() {
   }
 }
 
-(async () => {
+async function runVerification(block) {
 
-  const args = process.argv.slice(2);
-  
-  if (args.length != 1) {
-    throw new Error("Required args not provided. Please provide a block number")
-  }
-
-  BLOCK = parseInt(args[0]);
+  BLOCK = block;
   beanstalk = await asyncBeanstalkContractGetter();
   bs = new ContractStorage(await providerThenable, BEANSTALK, storageLayout, BLOCK);
 
   checkSystemVsAccounts();
   await checkContractTokens();
+}
 
-})()
+module.exports = {
+  runVerification
+};

@@ -4,6 +4,7 @@ const { exportInternalBalances } = require("./internal-balance");
 const { exportMarket } = require("./market");
 const { exportDeposits } = require("./silo");
 const { exportStorage } = require("./storage");
+const { runVerification } = require("./verify");
 
 // Main entrypoint for all scripts
 (async () => {
@@ -24,6 +25,7 @@ const { exportStorage } = require("./storage");
       await exportMarket(block);
       await exportInternalBalances(block);
       await exportStorage(block);
+      await runVerification(block);
       break;
     case 'silo':
       await exportDeposits(block);
@@ -42,6 +44,9 @@ const { exportStorage } = require("./storage");
       break;
     case 'storage':
       await exportStorage(block);
+      break;
+    case 'verify':
+      await runVerification(block);
       break;
   }
 

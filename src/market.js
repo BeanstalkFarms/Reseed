@@ -2,8 +2,8 @@ const fs = require('fs');
 const ethers = require('ethers');
 const { BEANSTALK } = require('./contracts/addresses.js');
 const storageLayout = require('./contracts/abi/storageLayout.json');
-const { providerThenable } = require('./contracts/provider');
 const ContractStorage = require('@beanstalk/contract-storage');
+const { providerThenable } = require('./contracts/provider');
 const { allPaginatedSG } = require('./utils/subgraph-paginate.js');
 const { beanstalkSG } = require('./contracts/subgraph-client.js');
 const { bigintHex } = require('./utils/json-formatter.js');
@@ -123,6 +123,8 @@ async function checkOrder(order) {
   const originalOrderId = order.id.replace(/-\d+$/, '');
   const orderAmount = await bs.s.podOrders[originalOrderId];
   if (orderAmount === BigInt(0)) {
+    // Subgraph had this as an active order, but the contract did not. There are currently some occurrences
+    // due to s.podOrders changing from storing a pod amount to a bean amount.
     console.log(`[WARNING]: A pod order for id ${originalOrderId} was not found!`);
   }
   marketStorage.orders.beanstalk2[originalOrderId] = orderAmount;

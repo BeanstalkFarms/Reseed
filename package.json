@@ -2,7 +2,7 @@
   "scripts": {
     "start": "node src/main.js",
     "all": "node src/main.js all",
-    "verify": "node src/verify.js"
+    "unclaimed-plenty": "node src/unclaimed-plenty.js"
   },
   "dependencies": {
     "@beanstalk/contract-storage": "^1.1.0",

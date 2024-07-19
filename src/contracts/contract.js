@@ -55,6 +55,6 @@ module.exports = {
   asyncBeanstalkContractGetter: async ({ provider, isLocal } = { provider: providerThenable, isLocal: false}) => getContractAsync(BEANSTALK, beanAbi, { provider, isLocal }),
   asyncFertContractGetter: async ({ provider, isLocal } = { provider: providerThenable, isLocal: false}) => getContractAsync(FERTILIZER, fertAbi, { provider, isLocal }),
   createAsyncERC20ContractGetter: (address, { provider, isLocal } = { provider: providerThenable, isLocal: false}) => async () => getContractAsync(address, erc20Abi, { provider, isLocal }),
-  getContractAsync: getContractAsync,
+  getContractAsync: async (address, abi, { provider, isLocal } = { provider: providerThenable, isLocal: false}) => getContractAsync(address, abi, { provider, isLocal }),
   getBalance: getBalance
 };
