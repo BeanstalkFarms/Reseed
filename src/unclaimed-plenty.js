@@ -12,16 +12,8 @@ const { bigintHex } = require('./utils/json-formatter.js');
 
 const EXPLOIT_BLOCK = 14602790;
 
-// uint256 eth = s.a[account].sop.base.mul(s.sop.weth).div(s.sop.base);
-// s.a[account].sop.base = balanceOfPlentyBase(account)
-// s.sop.weth = s.deprecated[5]
-// s.sop.base = s.deprecated[6]
-
 let beanstalk;
 let bs;
-
-let sopWeth;
-let sopBase;
 
 let checkProgress = 0;
 let unclaimedEth = {
@@ -30,11 +22,10 @@ let unclaimedEth = {
 };
 
 async function checkAccountPlenty(account) {
-  const accountBase = await retryable(async () => 
-    BigInt(await beanstalk.callStatic.balanceOfPlentyBase(account, { blockTag: EXPLOIT_BLOCK }))
+  const eth = await retryable(async () => 
+    BigInt(await beanstalk.callStatic.balanceOfEth(account, { blockTag: EXPLOIT_BLOCK }))
   );
-  if (accountBase > 0n) {
-    const eth = accountBase * sopWeth / sopBase;
+  if (eth > 0n) {
     unclaimedEth.accounts[account] = eth;
     unclaimedEth.total += eth;
   }
@@ -45,12 +36,6 @@ async function identifyUnclaimedPlenty() {
 
   beanstalk = await getContractAsync(BEANSTALK, beanstalkInitAbi, { provider: providerThenable });
   bs = new ContractStorage(await providerThenable, BEANSTALK, storageLayout, EXPLOIT_BLOCK);
-
-  // Set system values
-  [sopWeth, sopBase] = await Promise.all([
-    bs.s.deprecated[5],
-    bs.s.deprecated[6]
-  ]);
 
   const total = preReplantSiloAccounts.length;
   console.log('Checking pre-exploit accounts for unclaimed plenty...');
