@@ -24,6 +24,12 @@ const marketStorage = {
   }
 };
 
+// This was added so the events can include some information in addition to the hash
+const updatedMarketInfo = {
+  listings: {},
+  orders: {}
+}
+
 let checkProgress = 0;
 
 // Gets all market items from the subgraph, or a local cache if this was previously retrieved for the same block.
@@ -112,8 +118,21 @@ async function checkListing(listing) {
   if (BigInt(listingHash) === BigInt(0)) {
     console.log(`[WARNING]: A pod listing for index ${listing.index} was not found!`);
   }
+  const b3Hash = hashListing(listing);
   marketStorage.listings.beanstalk2[listing.index] = listingHash;
-  marketStorage.listings.beanstalk3[listing.index] = hashListing(listing);
+  marketStorage.listings.beanstalk3[listing.index] = b3Hash;
+
+  updatedMarketInfo.listings[b3Hash] = {
+    account: listing.farmer.id,
+    fieldId: 0,
+    index: listing.index,
+    start: listing.start,
+    amount: listing.amount,
+    pricePerPod: listing.pricePerPod,
+    maxHarvestableIndex: listing.maxHarvestableIndex,
+    minFillAmount: listing.minFillAmount,
+    mode: listing.mode
+  };
 
   process.stdout.write(`\r${++checkProgress}`);
 }
@@ -127,8 +146,17 @@ async function checkOrder(order) {
     // due to s.podOrders changing from storing a pod amount to a bean amount.
     console.log(`[WARNING]: A pod order for id ${originalOrderId} was not found!`);
   }
+  const b3Hash = hashOrder(order);
   marketStorage.orders.beanstalk2[originalOrderId] = orderAmount;
   marketStorage.orders.beanstalk3[hashOrder(order)] = orderAmount;
+
+  updatedMarketInfo.orders[b3Hash] = {
+    account: order.farmer.id,
+    fieldId: 0,
+    pricePerPod: order.pricePerPod,
+    maxPlaceInLine: order.maxPlaceInLine,
+    minFillAmount: order.minFillAmount
+  };
 
   process.stdout.write(`\r${++checkProgress}`);
 }
@@ -198,8 +226,11 @@ async function exportMarket(block) {
 
   const outFile = `results/market${BLOCK}.json`;
   await fs.promises.writeFile(outFile, JSON.stringify(marketStorage, bigintHex, 2));
-
   console.log(`Marketplace data exported to ${outFile}`);
+
+  const infoOutFile = `results/market-info${BLOCK}.json`;
+  await fs.promises.writeFile(infoOutFile, JSON.stringify(updatedMarketInfo, bigintHex, 2));
+  console.log(`Additional market information exported to ${infoOutFile}`);
 
 }
 
