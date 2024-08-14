@@ -145,6 +145,7 @@ async function checkOrder(order) {
     // Subgraph had this as an active order, but the contract did not. There are currently some occurrences
     // due to s.podOrders changing from storing a pod amount to a bean amount.
     console.log(`[WARNING]: A pod order for id ${originalOrderId} was not found!`);
+    return;
   }
   const b3Hash = hashOrder(order);
   marketStorage.orders.beanstalk2[originalOrderId] = orderAmount;
