@@ -155,7 +155,8 @@ async function checkOrder(order) {
     fieldId: 0,
     pricePerPod: order.pricePerPod,
     maxPlaceInLine: order.maxPlaceInLine,
-    minFillAmount: order.minFillAmount
+    minFillAmount: order.minFillAmount,
+    orderBeans: orderAmount
   };
 
   process.stdout.write(`\r${++checkProgress}`);
