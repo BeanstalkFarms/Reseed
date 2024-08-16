@@ -4,9 +4,8 @@ const { BEANSTALK, BEAN, BEANWETH, BEANWSTETH, BEAN3CRV, UNRIPE_BEAN, UNRIPE_LP 
 const { getActualActiveFertilizer, getActualFertilizedIndex, getActualUnfertilizedIndex, getClaimedSprouts } = require('../barn/barn-util.js');
 const { tokenEq, l2Token } = require('../token.js');
 const { createAsyncERC20ContractGetter } = require('../../contracts/contract.js');
-const { runBatchPromises } = require('../batch-promise.js');
-const { WHITELISTED, getSumOfUserTotals } = require('../silo/silo-util.js');
-const { getL2TokenAmount, l2TokenMapping } = require('../balances/balances-util.js');
+const { WHITELISTED, getSumOfUserTotals, getL2StalkAmount } = require('../silo/silo-util.js');
+const { getL2TokenAmount } = require('../balances/balances-util.js');
 
 let BLOCK;
 let bs;
@@ -45,10 +44,12 @@ async function systemStruct(options) {
     bs.s.wellOracleSnapshots[BEANWSTETH],
     twaReservesStruct(BEANWETH),
     twaReservesStruct(BEANWSTETH),
-    bs.s.deprecated2// bs.s.casesV2 TODO: using shorter array temporarily because its faster for testing
+    bs.s.casesV2
   ]);
 
   const { podListings, podOrders } = getMarketMappings();
+  const orderLockedBeans = Object.keys(podOrders).reduce((a, next) => a + BigInt(podOrders[next]), 0n);
+
   const internalTokenBalanceTotal = getInternalBalanceMapping();
 
   const wellOracleSnapshots = {
@@ -119,6 +120,7 @@ async function systemStruct(options) {
     beanSown,
     activeField: 0n,
     fieldCount: 1n,
+    orderLockedBeans,
     // bytes32[16] _buffer_0,
     podListings,
     podOrders,
@@ -176,7 +178,7 @@ async function siloStruct() {
   console.log('Gathering silo info...');
 
   userSiloTotals = getSumOfUserTotals(BLOCK);
-  const stalk = userSiloTotals.stalkMinusGerminating;
+  const stalk = getL2StalkAmount(userSiloTotals.stalkMinusGerminating);
   const roots = stalk * BigInt(10 ** 12);
 
   const balances = {};
@@ -365,7 +367,7 @@ async function seedGaugeStruct() {
     bs.s.seedGauge.beanToMaxLpGpPerBdvRatio
   ]);
   return {
-    averageGrownStalkPerBdvPerSeason,
+    averageGrownStalkPerBdvPerSeason: getL2StalkAmount(averageGrownStalkPerBdvPerSeason),
     beanToMaxLpGpPerBdvRatio
     // bytes32[8] _buffer
   }
@@ -428,12 +430,12 @@ async function assetSettingsStruct(token) {
   ]);
   return {
     selector,
-    stalkEarnedPerSeason,
-    stalkIssuedPerBdv,
+    stalkEarnedPerSeason: getL2StalkAmount(stalkEarnedPerSeason),
+    stalkIssuedPerBdv: getL2StalkAmount(stalkIssuedPerBdv),
     milestoneSeason,
     milestoneStem,
     encodeType,
-    deltaStalkEarnedPerSeason,
+    deltaStalkEarnedPerSeason: getL2StalkAmount(deltaStalkEarnedPerSeason),
     gaugePoints,
     optimalPercentDepositedBdv,
     gaugePointImplementation: null,
@@ -507,7 +509,7 @@ async function unclaimedGerminatingMapping() {
 
   const unclaimedGerminating = {};
   for (let i = currentSeason - 1; i <= currentSeason; ++i) {
-    const stalk = await bs.s.unclaimedGerminating[i].stalk;
+    const stalk = getL2StalkAmount(await bs.s.unclaimedGerminating[i].stalk);
     if (stalk !== 0n) {
       unclaimedGerminating[i] = {
         stalk,

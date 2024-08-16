@@ -1,7 +1,6 @@
 const fs = require('fs');
-const { packAddressAndStem } = require('../silo/silo-util');
+const { packAddressAndStem, getL2StalkAmount } = require('../silo/silo-util');
 const { runBatchPromises } = require('../batch-promise');
-const { l2TokenMapping } = require('../balances/balances-util');
 const { l2Token } = require('../token');
 
 let BLOCK;
@@ -55,7 +54,7 @@ async function accountStruct(account) {
     bs.s.a[account].lastRain
   ]);
 
-  const stalk = BigInt(allDeposits.accounts[account]?.totals.stalkMinusGerminating ?? 0);
+  const stalk = getL2StalkAmount(BigInt(allDeposits.accounts[account]?.totals.stalkMinusGerminating ?? 0));
   const roots = stalk * BigInt(10 ** 12);
 
   const { deposits, depositIdList, mowStatuses } = getAccountSilo(account);
@@ -148,8 +147,8 @@ async function germinatingMapping(account, lastUpdate) {
     bs.s.a[account].farmerGerminating.even
   ]);
   return {
-    0: oddGerm,
-    1: evenGerm
+    0: getL2StalkAmount(oddGerm),
+    1: getL2StalkAmount(evenGerm)
   };
 }
 
