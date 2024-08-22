@@ -4,7 +4,7 @@ const { BEANSTALK, BEAN, BEANWETH, BEANWSTETH, BEAN3CRV, UNRIPE_BEAN, UNRIPE_LP 
 const { getActualActiveFertilizer, getActualFertilizedIndex, getActualUnfertilizedIndex, getClaimedSprouts } = require('../barn/barn-util.js');
 const { tokenEq, l2Token } = require('../token.js');
 const { createAsyncERC20ContractGetter } = require('../../contracts/contract.js');
-const { WHITELISTED, getSumOfUserTotals, getL2StalkAmount } = require('../silo/silo-util.js');
+const { WHITELISTED, getSumOfUserTotals } = require('../silo/silo-util.js');
 const { getL2TokenAmount } = require('../balances/balances-util.js');
 
 let BLOCK;
@@ -178,7 +178,7 @@ async function siloStruct() {
   console.log('Gathering silo info...');
 
   userSiloTotals = getSumOfUserTotals(BLOCK);
-  const stalk = getL2StalkAmount(userSiloTotals.stalkMinusGerminating);
+  const stalk = userSiloTotals.stalkMinusGerminating;
   const roots = stalk * BigInt(10 ** 12);
 
   const balances = {};
@@ -367,7 +367,7 @@ async function seedGaugeStruct() {
     bs.s.seedGauge.beanToMaxLpGpPerBdvRatio
   ]);
   return {
-    averageGrownStalkPerBdvPerSeason: getL2StalkAmount(averageGrownStalkPerBdvPerSeason),
+    averageGrownStalkPerBdvPerSeason: averageGrownStalkPerBdvPerSeason * BigInt(10 ** 6),
     beanToMaxLpGpPerBdvRatio
     // bytes32[8] _buffer
   }
@@ -430,12 +430,12 @@ async function assetSettingsStruct(token) {
   ]);
   return {
     selector,
-    stalkEarnedPerSeason: getL2StalkAmount(stalkEarnedPerSeason),
-    stalkIssuedPerBdv: getL2StalkAmount(stalkIssuedPerBdv),
+    stalkEarnedPerSeason: stalkEarnedPerSeason * BigInt(10 ** 6),
+    stalkIssuedPerBdv: stalkIssuedPerBdv * BigInt(10 ** 6),
     milestoneSeason,
     milestoneStem,
     encodeType,
-    deltaStalkEarnedPerSeason: getL2StalkAmount(deltaStalkEarnedPerSeason),
+    deltaStalkEarnedPerSeason: deltaStalkEarnedPerSeason * BigInt(10 ** 6),
     gaugePoints,
     optimalPercentDepositedBdv,
     gaugePointImplementation: null,
@@ -509,7 +509,7 @@ async function unclaimedGerminatingMapping() {
 
   const unclaimedGerminating = {};
   for (let i = currentSeason - 1; i <= currentSeason; ++i) {
-    const stalk = getL2StalkAmount(await bs.s.unclaimedGerminating[i].stalk);
+    const stalk = (await bs.s.unclaimedGerminating[i].stalk) * BigInt(10 ** 6);
     if (stalk !== 0n) {
       unclaimedGerminating[i] = {
         stalk,

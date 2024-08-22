@@ -82,11 +82,6 @@ function getSumOfUserTotals(block) {
   }
 }
 
-// Scale stalk up to 16 decimals total
-function getL2StalkAmount(l1Amount) {
-  return l1Amount * BigInt(10 ** 6);
-}
-
 module.exports = {
   packAddressAndStem,
   seasonToStem,
@@ -96,6 +91,5 @@ module.exports = {
   getBeanLusdUnripeLP,
   getSumOfUserTotals,
   WHITELISTED: [BEAN, BEANWETH, BEANWSTETH, BEAN3CRV, UNRIPE_BEAN, UNRIPE_LP],
-  WHITELISTED_LP: [BEANWETH, BEAN3CRV, BEANWSTETH],
-  getL2StalkAmount
+  WHITELISTED_LP: [BEANWETH, BEAN3CRV, BEANWSTETH]
 }
