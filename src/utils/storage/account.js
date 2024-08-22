@@ -54,7 +54,7 @@ async function accountStruct(account) {
     bs.s.a[account].lastRain
   ]);
 
-  const stalk = BigInt(allDeposits.accounts[account]?.totals.stalkMinusGerminating ?? 0);
+  const stalk = BigInt(allDeposits.accounts[account]?.totals.stalkIfMownMinusGerminating ?? 0);
   const roots = stalk * BigInt(10 ** 12);
 
   const { deposits, depositIdList, mowStatuses } = getAccountSilo(account);

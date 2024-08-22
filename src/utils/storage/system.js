@@ -178,7 +178,7 @@ async function siloStruct() {
   console.log('Gathering silo info...');
 
   userSiloTotals = getSumOfUserTotals(BLOCK);
-  const stalk = userSiloTotals.stalkMinusGerminating;
+  const stalk = userSiloTotals.stalkIfMownMinusGerminating;
   const roots = stalk * BigInt(10 ** 12);
 
   const balances = {};

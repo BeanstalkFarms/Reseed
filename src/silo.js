@@ -284,6 +284,8 @@ async function checkWallet(results, deposits, depositor) {
   // Write total stalk/germinating to the deposits object so it can be available in a single file
   deposits[depositor].totals.stalkMinusGerminating = netDepositorStalk - contractStalk.germinating;
   deposits[depositor].totals.stalkInclGerminating = netDepositorStalk;
+  deposits[depositor].totals.stalkIfMownMinusGerminating = netDepositorMownStalk - contractStalk.germinating;
+  deposits[depositor].totals.stalkIfMownInclGerminating = netDepositorMownStalk;
 
   netSystemStalk += netDepositorStalk;
   netSystemMownStalk += netDepositorMownStalk;
@@ -389,10 +391,14 @@ async function exportDeposits(block) {
     totals: Object.keys(deposits).reduce((a, next) => {
       a.stalkMinusGerminating += deposits[next].totals.stalkMinusGerminating;
       a.stalkInclGerminating += deposits[next].totals.stalkInclGerminating;
+      a.stalkIfMownMinusGerminating += deposits[next].totals.stalkIfMownMinusGerminating;
+      a.stalkIfMownInclGerminating += deposits[next].totals.stalkIfMownInclGerminating;
       return a;
     }, {
       stalkMinusGerminating: 0n,
       stalkInclGerminating: 0n,
+      stalkIfMownMinusGerminating: 0n,
+      stalkIfMownInclGerminating: 0n,
       stemTips
     })
   };
@@ -414,7 +420,7 @@ async function exportDeposits(block) {
   console.log(`Sum of all user stalk (including earned and germinating): ${netSystemStalk}`);
   const storageGerminating = await getSystemGerminating();
   // Germinating is added here because it was added into all user balances already (but not s.s.stalk)
-  const storageStalk =  await bs.s.s.stalk + storageGerminating;
+  const storageStalk = (await bs.s.s.stalk) * BigInt(10 ** 6) + storageGerminating;
   const storageEarnedBeans = await bs.s.earnedBeans;
   console.log(`Expected sum (s.s.stalk + s.odd/evenGerminating):         ${storageStalk}`);
   console.log(`Difference?                                               ${storageStalk - netSystemStalk}`)

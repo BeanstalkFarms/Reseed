@@ -59,7 +59,7 @@ async function getBeanLusdUnripeLP(account, season, bs) {
 function getSumOfUserTotals(block) {
   const accountStorage = JSON.parse(fs.readFileSync(`results/storage-accounts${block}.json`));
   const siloBalances = {};
-  let allStalk = 0n;
+  let sumUserStalk = 0n;
   for (const account in accountStorage) {
     for (const token in accountStorage[account].depositIdList) {
       if (!siloBalances[token]) {
@@ -74,10 +74,10 @@ function getSumOfUserTotals(block) {
         siloBalances[token].bdv += BigInt(accountStorage[account].deposits[depositId].bdv);
       }
     }
-    allStalk += BigInt(accountStorage[account].stalk);
+    sumUserStalk += BigInt(accountStorage[account].stalk);
   }
   return {
-    stalkMinusGerminating: allStalk,
+    stalkIfMownMinusGerminating: sumUserStalk,
     tokens: siloBalances
   }
 }
