@@ -1,5 +1,5 @@
 const fs = require('fs');
-const { BEANSTALK, BEAN, BEANWETH, UNRIPE_BEAN, UNRIPE_LP } = require('./contracts/addresses.js');
+const { BEANSTALK, BEAN, BEANWETH, BEANWSTETH, UNRIPE_BEAN, UNRIPE_LP } = require('./contracts/addresses.js');
 const { createAsyncERC20ContractGetter, asyncBeanstalkContractGetter } = require("./contracts/contract");
 const { tokenEq } = require('./utils/token.js');
 const { getRinsableSprouts } = require('./utils/barn/barn-util.js');
@@ -72,7 +72,7 @@ async function checkContractTokens() {
       console.log(`Sum of Unpicked:            ${sumUnpicked[token]}`);
       difference -= sumUnpicked[token];
     }
-    if ([BEAN, BEANWETH].includes(token)) {
+    if ([BEAN, BEANWSTETH].includes(token)) {
       const underlying = BigInt(await beanstalk.callStatic.getTotalUnderlying(token === BEAN ? UNRIPE_BEAN : UNRIPE_LP, { blockTag: BLOCK }));
       console.log(`Sum of Ripe underlying:     ${underlying}`)
       difference -= underlying
