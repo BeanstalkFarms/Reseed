@@ -210,8 +210,9 @@ async function checkWallet(results, deposits, depositor) {
         bdv: earnedBeans,
         version: ['v3.1'],
         // Need to set stalk here since they necessarily have not mown on the current season
-        stalk: earnedBeans * BigInt(10 ** 4),
-        stalkIfMown: earnedBeans * BigInt(10 ** 4)
+        // 16 decimals for L2
+        stalk: earnedBeans * BigInt(10 ** 10),
+        stalkIfMown: earnedBeans * BigInt(10 ** 10)
       };
     } else {
       deposits[depositor][BEAN][stemTips[BEAN]].amount += earnedBeans;
@@ -252,8 +253,8 @@ async function checkWallet(results, deposits, depositor) {
         // Current delta, max delta (if mown now)
         const stemDeltas = [mowStem - BigInt(stem), stemTips[token] - BigInt(stem)];
         // Deposit stalk = grown + base stalk
-        // stems have 6 precision, though 10 is needed to grow one stalk. 10 + 6 - 6 => 10 precision for stalk
-        const stalk = stemDeltas.map(delta => (delta + 10000000000n) * deposits[depositor][token][stem].bdv / BigInt(10 ** 6));
+        // stems have 6 precision, though 10 is needed to grow one stalk. 10 + 6 => 16 precision for stalk
+        const stalk = stemDeltas.map(delta => (delta + 10000000000n) * deposits[depositor][token][stem].bdv);
         deposits[depositor][token][stem].stalk = stalk[0];
         deposits[depositor][token][stem].stalkIfMown = stalk[1];
       }
@@ -316,12 +317,13 @@ async function getContractStalk(account) {
       }
     })
   ]);
+  // Scaled +6 decimals for L2
   return {
-    storage,
-    earned,
-    germinating,
-    doneGerminating,
-    sum: storage + earned + germinating + doneGerminating
+    storage: storage * BigInt(10 ** 6),
+    earned: earned * BigInt(10 ** 6),
+    germinating: germinating * BigInt(10 ** 6),
+    doneGerminating: doneGerminating * BigInt(10 ** 6),
+    sum: (storage + earned + germinating + doneGerminating) * BigInt(10 ** 6)
   }
 }
 
@@ -330,7 +332,7 @@ async function getSystemGerminating() {
     const germinating = await Promise.all([BEAN, BEANWETH, UNRIPE_BEAN, UNRIPE_LP].map(token =>
       bs.s[field].deposited[token].bdv
     ));
-    return germinating.reduce((a, next) => a + next * BigInt(10 ** 4), 0n);
+    return germinating.reduce((a, next) => a + next * BigInt(10 ** 10), 0n); // bdv is 6, +10 to get to 16
   }));
   return both.reduce((a, next) => a + next, 0n);
 }
