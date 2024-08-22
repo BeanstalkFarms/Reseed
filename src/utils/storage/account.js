@@ -62,7 +62,7 @@ async function accountStruct(account) {
     0: getAccountField(account)
   };
 
-  const germinatingStalk = germinatingMapping(account, actualLastUpdate)
+  const germinatingStalk = await germinatingMapping(account, actualLastUpdate)
   const internalTokenBalance = getAccountInternalBalances(account);
 
   process.stdout.write(`\r${++walletProgress} / ${allAccounts.length}`);
