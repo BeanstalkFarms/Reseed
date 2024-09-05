@@ -1,5 +1,4 @@
 const fs = require('fs');
-const readline = require('readline');
 const { BEANSTALK, BEAN, UNRIPE_BEAN, UNRIPE_LP, BEANWETH } = require('./contracts/addresses.js');
 const { providerThenable, localProvider } = require('./contracts/provider');
 const { tokenEq } = require('./utils/token.js');
@@ -10,6 +9,7 @@ const storageLayout = require('./contracts/abi/storageLayout.json');
 const ContractStorage = require('@beanstalk/contract-storage');
 const { getBeanEthUnripeLP, getBean3CrvUnripeLP, getBeanLusdUnripeLP, seasonToStem, getLegacySeedsPerToken, packAddressAndStem, WHITELISTED_LP } = require('./utils/silo/silo-util.js');
 const { getL2TokenAmount } = require('./utils/balances/balances-util.js');
+const { getDuneResult } = require('./contracts/dune');
 
 let LOCAL = false;
 let BLOCK;
@@ -32,9 +32,9 @@ let sumUserEarnedBeans = BigInt(0);
 
 const BATCH_SIZE = 100;
 
-async function preProcessInit(deposits, lines) {
-  for (const line of lines) {
-    const [account, token] = line.split(',');
+async function preProcessInit(deposits, rows) {
+  for (const row of rows) {
+    const [account, token] = [row.account, row.token];
 
     if (!deposits[account]) {
       deposits[account] = {};
@@ -46,8 +46,8 @@ async function preProcessInit(deposits, lines) {
 }
 
 // Silo v3 migrated stems
-async function processLine(deposits, line) {
-  let [account, token, stem, season, amount, bdv] = line.split(',');
+async function processRow(deposits, row) {
+  let [account, token, stem, season, amount, bdv] = [row.account, row.token, row.stem ?? '', row.season ?? '', row.amount_balance, row.bdv_balance];
 
   let version = '';
 
@@ -173,7 +173,7 @@ async function checkWallets(deposits) {
   // Format the result with raw hex values and decimal values
   const reducer = (result, [k, v]) => {
     if (typeof v === 'bigint') {
-      result[k] = (Number(v / BigInt(10 ** 8)) / Math.pow(10, 2)).toLocaleString();
+      result[k] = (Number(v / BigInt(10 ** 14)) / Math.pow(10, 2)).toLocaleString();
     } else {
       result[k] = Object.entries(v).reduce(reducer, {});
     }
@@ -353,30 +353,24 @@ async function exportDeposits(block) {
   stemStartSeason = await bs.s.season.stemStartSeason;
   stemScaleSeason = await bs.s.season.stemScaleSeason;
 
-  // https://dune.com/queries/3819175
-  const fileStream = fs.createReadStream(`inputs/silo${BLOCK}.csv`);
-  const rl = readline.createInterface({
-    input: fileStream,
-    crlfDelay: Infinity
-  });
+  console.log('Pulling deposits data from dune...');
+  const duneResult = await getDuneResult(3849370, BLOCK);
 
   const deposits = {};
-  console.log('Reading deposits data from file...');
+  console.log('Reading deposits data...');
 
-  let linesBuffer = [];
-  for await (const line of rl) {
-    if (!line.includes('account')) {
-      linesBuffer.push(line);
-    }
-    if (linesBuffer.length >= BATCH_SIZE) {
-      await preProcessInit(deposits, linesBuffer);
-      await Promise.all(linesBuffer.map(line => processLine(deposits, line)));
-      linesBuffer = [];
+  let rowsBuffer = [];
+  for await (const row of duneResult.result.rows) {
+    rowsBuffer.push(row);
+    if (rowsBuffer.length >= BATCH_SIZE) {
+      await preProcessInit(deposits, rowsBuffer);
+      await Promise.all(rowsBuffer.map(row => processRow(deposits, row)));
+      rowsBuffer = [];
     }
   }
-  if (linesBuffer.length > 0) {
-    await preProcessInit(deposits, linesBuffer);
-    await Promise.all(linesBuffer.map(line => processLine(deposits, line)));
+  if (rowsBuffer.length > 0) {
+    await preProcessInit(deposits, rowsBuffer);
+    await Promise.all(rowsBuffer.map(row => processRow(deposits, row)));
   }
 
   console.log(`\rFinished processing ${parseProgress} entries`);

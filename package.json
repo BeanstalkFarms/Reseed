@@ -6,6 +6,7 @@
   },
   "dependencies": {
     "@beanstalk/contract-storage": "^1.1.0",
+    "@duneanalytics/client-sdk": "^0.2.1",
     "alchemy-sdk": "^3.3.1",
     "dotenv": "^16.3.1",
     "ethers": "^6.10.0",
