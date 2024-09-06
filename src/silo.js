@@ -185,8 +185,21 @@ async function transformStem(account, token, stem) {
 }
 
 async function checkWallets(deposits) {
+  // Add all-time depositors. Some may still have unclaimed earned beans and nothing else in silo.
+  console.log('Pulling all depositor accounts from dune...');
+  let newWallets = 0;
+  const duneResult = await getDuneResult(4050145, BLOCK);
+  for (const row of duneResult.result.rows) {
+    if (!deposits[row.account]) {
+      deposits[row.account] = {};
+      ++newWallets;
+    }
+  }
+  console.log(`Added ${newWallets} additional wallets to check.`);
+
   const results = {};
   const depositors = Object.keys(deposits);
+  console.log(`Checking ${depositors.length} wallets...`);
 
   for (let i = 0; i < depositors.length; i += BATCH_SIZE) {
     const batch = depositors.slice(i, Math.min(i + BATCH_SIZE, depositors.length));
@@ -400,7 +413,6 @@ async function exportDeposits(block) {
   console.log(`\rFinished processing ${parseProgress} entries`);
 
   // Check all wallets and output to file
-  console.log(`Checking ${Object.keys(deposits).length} wallets...`);
   const results = await checkWallets(deposits);
 
   // Add global totals to deposits object before writing to out file
