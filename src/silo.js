@@ -11,13 +11,15 @@ const { getBeanEthUnripeLP, getBean3CrvUnripeLP, getBeanLusdUnripeLP, seasonToSt
 const { getL2TokenAmount } = require('./utils/balances/balances-util.js');
 const { getDuneResult } = require('./contracts/dune');
 
+// Exploit migration
+const INITIAL_RECAP = BigInt(185564685220298701);
+const BATCH_SIZE = 100;
+const DEBUG_ACCOUNT = '';
 let LOCAL = false;
+
 let BLOCK;
 let beanstalk;
 let bs;
-
-// Exploit migration
-const INITIAL_RECAP = BigInt(185564685220298701);
 
 let stemStartSeason; // For v2 -> v3
 let stemScaleSeason; // For v3 -> v3.1
@@ -26,13 +28,26 @@ let parseProgress = 0;
 let walletProgress = 0;
 let stemTips = {};
 
-let netSystemStalk = BigInt(0);
-let netSystemMownStalk = BigInt(0);
-let sumUserEarnedBeans = BigInt(0);
+let netSystemStalk = 0n;
+let netSystemMownStalk = 0n;
+let sumUserEarnedBeans = 0n;
 
-const BATCH_SIZE = 100;
+function clearState() {
+  BLOCK = null;
+  beanstalk = null;
+  bs = null;
 
-const DEBUG_ACCOUNT = '';
+  stemStartSeason = null;
+  stemScaleSeason = null;
+  accountUpdates = {};
+  parseProgress = 0;
+  walletProgress = 0;
+  stemTips = {};
+
+  netSystemStalk = 0n;
+  netSystemMownStalk = 0n;
+  sumUserEarnedBeans = 0n;
+}
 
 async function preProcessInit(deposits, rows) {
   for (const row of rows) {
@@ -348,6 +363,7 @@ async function getSystemGerminating() {
 }
 
 async function exportDeposits(block) {
+  clearState();
 
   BLOCK = block;
 
