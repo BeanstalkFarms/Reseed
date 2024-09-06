@@ -32,9 +32,14 @@ let sumUserEarnedBeans = BigInt(0);
 
 const BATCH_SIZE = 100;
 
+const DEBUG_ACCOUNT = '';
+
 async function preProcessInit(deposits, rows) {
   for (const row of rows) {
     const [account, token] = [row.account, row.token];
+    if (DEBUG_ACCOUNT && account !== DEBUG_ACCOUNT) {
+      continue;
+    }
 
     if (!deposits[account]) {
       deposits[account] = {};
@@ -48,6 +53,9 @@ async function preProcessInit(deposits, rows) {
 // Silo v3 migrated stems
 async function processRow(deposits, row) {
   let [account, token, stem, season, amount, bdv] = [row.account, row.token, row.stem ?? '', row.season ?? '', row.amount_balance, row.bdv_balance];
+  if (DEBUG_ACCOUNT && account !== DEBUG_ACCOUNT) {
+    return;
+  }
 
   let version = '';
 
@@ -423,6 +431,17 @@ async function exportDeposits(block) {
   console.log(`System earned beans:                                      ${storageEarnedBeans}`);
   console.log(`Sum of planted user earned beans:                         ${sumUserEarnedBeans}`);
   console.log(`Difference?                                               ${storageEarnedBeans - sumUserEarnedBeans}`);
+  
+  return {
+    netSystemStalk,
+    storageStalk,
+    stalkDifference: storageStalk - netSystemStalk,
+    storageGerminating,
+    netSystemMownStalk,
+    storageEarnedBeans,
+    sumUserEarnedBeans,
+    earnedBeansDifference: storageEarnedBeans - sumUserEarnedBeans
+  };
 }
 
 module.exports = {

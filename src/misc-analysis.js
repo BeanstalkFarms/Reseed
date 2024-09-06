@@ -1,5 +1,7 @@
 const fs = require('fs');
 const { UNRIPE_BEAN, UNRIPE_LP } = require('./contracts/addresses.js');
+const { binarySearch } = require('./utils/binary-search.js');
+const { exportDeposits } = require('./silo.js');
 
 function stalkAnalysis(block) {
   const deposits = JSON.parse(fs.readFileSync(`results/deposits${block}.json`));
@@ -51,4 +53,27 @@ function replantMerkleAnalysis() {
   console.log(`Sum of merkle input data lp:    ${sumDataLp}`);
   console.log(`Difference?                     ${sumMerkleLp - sumDataLp}`);
 }
-replantMerkleAnalysis();
+// replantMerkleAnalysis();
+
+// Binary search on the silo script's output for when a given property plus an offset crosses in sign.
+// `lowerIsNegative` indicates whether the initial lower block number corresponds to a negative numerical result.
+async function searchSiloDiscrepancy(targetProperty, valueOffset, lower, upper, lowerIsNegative) {
+  
+  let remainingIterations = Math.ceil(Math.log2(upper - lower + 1));
+  console.log('Remaining iterations:', remainingIterations);
+  const result = await binarySearch(lower, upper, async (block) => {
+    const siloResult = await exportDeposits(block);
+    const isPositive = siloResult[targetProperty] + valueOffset > 0n;
+    return isPositive && lowerIsNegative ? -1 : 1;
+  }, (usedMiddle) => {
+    console.log('Remaining iterations:', --remainingIterations);
+  });
+  console.log('found at ', result);
+}
+
+(async () => {
+  console.log('----\nSearching stalkDifference discrepancy\n----');
+  await searchSiloDiscrepancy('stalkDifference', 0n, 20567141, 20577510, false);
+  console.log('----\nSearching earnedBeansDifference discrepancy\n----');
+  await searchSiloDiscrepancy('earnedBeansDifference', -2200000000n, 20330000, 20472477, false);
+})();
