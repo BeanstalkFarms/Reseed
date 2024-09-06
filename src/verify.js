@@ -1,5 +1,5 @@
 const fs = require('fs');
-const { BEANSTALK, BEAN, BEANWETH, BEANWSTETH, UNRIPE_BEAN, UNRIPE_LP } = require('./contracts/addresses.js');
+const { BEANSTALK, BEAN, BEANWSTETH, UNRIPE_BEAN, UNRIPE_LP } = require('./contracts/addresses.js');
 const { createAsyncERC20ContractGetter, asyncBeanstalkContractGetter } = require("./contracts/contract");
 const { tokenEq } = require('./utils/token.js');
 const { getRinsableSprouts } = require('./utils/barn/barn-util.js');

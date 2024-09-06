@@ -1,5 +1,5 @@
 const fs = require('fs');
-const { BEANSTALK, BEAN, UNRIPE_BEAN, UNRIPE_LP, BEANWETH } = require('./contracts/addresses.js');
+const { BEANSTALK, BEAN, UNRIPE_BEAN, UNRIPE_LP, BEANWETH, BEANWSTETH } = require('./contracts/addresses.js');
 const { providerThenable, localProvider } = require('./contracts/provider');
 const { tokenEq } = require('./utils/token.js');
 const { bigintHex, bigintDecimal } = require('./utils/json-formatter.js');
@@ -354,7 +354,7 @@ async function getContractStalk(account) {
 
 async function getSystemGerminating() {
   const both = await Promise.all(['oddGerminating', 'evenGerminating'].map(async field => {
-    const germinating = await Promise.all([BEAN, BEANWETH, UNRIPE_BEAN, UNRIPE_LP].map(token =>
+    const germinating = await Promise.all([BEAN, BEANWETH, BEANWSTETH, UNRIPE_BEAN, UNRIPE_LP].map(token =>
       bs.s[field].deposited[token].bdv
     ));
     return germinating.reduce((a, next) => a + next * BigInt(10 ** 10), 0n); // bdv is 6, +10 to get to 16

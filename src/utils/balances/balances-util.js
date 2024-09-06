@@ -1,6 +1,6 @@
 const fs = require('fs');
 const { runBatchPromises } = require('../batch-promise');
-const { BEAN, BEANWETH, BEANWSTETH, UNRIPE_BEAN, UNRIPE_LP, BEAN3CRV } = require('../../contracts/addresses.js');
+const { BEAN, UNRIPE_BEAN, UNRIPE_LP } = require('../../contracts/addresses.js');
 const { WHITELISTED, WHITELISTED_LP } = require('../silo/silo-util.js');
 const { createAsyncERC20ContractGetter } = require('../../contracts/contract.js');
 const { l2Token } = require('../token.js');

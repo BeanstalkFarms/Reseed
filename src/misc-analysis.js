@@ -62,8 +62,22 @@ async function searchSiloDiscrepancy(targetProperty, valueOffset, lower, upper, 
   let remainingIterations = Math.ceil(Math.log2(upper - lower + 1));
   console.log('Remaining iterations:', remainingIterations);
   const result = await binarySearch(lower, upper, async (block) => {
+    console.log('Processing block', block);
     const siloResult = await exportDeposits(block);
     const isPositive = siloResult[targetProperty] + valueOffset > 0n;
+    if (!isPositive) {
+      if (lowerIsNegative) {
+        return 1;
+      } else {
+        return -1
+      }
+    } else {
+      if (lowerIsNegative) {
+        return -1;
+      } else {
+        return 1;
+      }
+    }
     return isPositive && lowerIsNegative ? -1 : 1;
   }, (usedMiddle) => {
     console.log('Remaining iterations:', --remainingIterations);
@@ -75,5 +89,5 @@ async function searchSiloDiscrepancy(targetProperty, valueOffset, lower, upper, 
   console.log('----\nSearching stalkDifference discrepancy\n----');
   await searchSiloDiscrepancy('stalkDifference', 0n, 20567141, 20577510, false);
   console.log('----\nSearching earnedBeansDifference discrepancy\n----');
-  await searchSiloDiscrepancy('earnedBeansDifference', -2200000000n, 20330000, 20472477, false);
+  await searchSiloDiscrepancy('earnedBeansDifference', -2200000000n, 20330000, 20401238, false);
 })();
