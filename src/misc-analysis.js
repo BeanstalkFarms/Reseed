@@ -2,6 +2,11 @@ const fs = require('fs');
 const { UNRIPE_BEAN, UNRIPE_LP } = require('./contracts/addresses.js');
 const { binarySearch } = require('./utils/binary-search.js');
 const { exportDeposits } = require('./silo.js');
+const { getDuneResult } = require('./contracts/dune.js');
+const { runBatchPromises } = require('./utils/batch-promise.js');
+const retryable = require('./utils/retryable.js');
+const { asyncBeanstalkContractGetter } = require('./contracts/contract.js');
+const { bigintDecimal } = require('./utils/json-formatter.js');
 
 function stalkAnalysis(block) {
   const deposits = JSON.parse(fs.readFileSync(`results/deposits${block}.json`));
@@ -78,16 +83,48 @@ async function searchSiloDiscrepancy(targetProperty, valueOffset, lower, upper, 
         return 1;
       }
     }
-    return isPositive && lowerIsNegative ? -1 : 1;
   }, (usedMiddle) => {
     console.log('Remaining iterations:', --remainingIterations);
   });
   console.log('found at ', result);
 }
 
+async function allEarnedBeans(block) {
+
+  const beanstalk = await asyncBeanstalkContractGetter();
+
+  console.log('Getting accounts to check earned beans for...')
+  const duneResult = await getDuneResult(4050145, block);
+  const promiseGenerators = [];
+  const results = []
+  for (const row of duneResult.result.rows) {
+    promiseGenerators.push(async () => 
+      results.push({
+        account: row.account,
+        earnedBeans: BigInt(await retryable(async () => 
+          beanstalk.callStatic.balanceOfEarnedBeans(row.account, { blockTag: block })
+        ))
+      }) 
+    );
+  }
+  console.log(`Processing ${promiseGenerators.length} accounts...`);
+  await runBatchPromises(promiseGenerators, 100);
+
+  results.sort((a, b) => a.account > b.account ? -1 : 1);
+  await fs.promises.writeFile(`results/earnedBeans${block}.json`, JSON.stringify(results, bigintDecimal, 2));
+
+  const sum = results.reduce((a, next) => a + next.earnedBeans, 0n);
+  console.log(`Sum of all: ${sum}`);;
+}
+
 (async () => {
-  console.log('----\nSearching stalkDifference discrepancy\n----');
-  await searchSiloDiscrepancy('stalkDifference', 0n, 20567141, 20577510, false);
-  console.log('----\nSearching earnedBeansDifference discrepancy\n----');
-  await searchSiloDiscrepancy('earnedBeansDifference', -2200000000n, 20330000, 20401238, false);
+  // console.log('----\nSearching stalkDifference discrepancy\n----');
+  // await searchSiloDiscrepancy('stalkDifference', 0n, 20567141, 20577510, false);
+  // console.log('----\nSearching earnedBeansDifference discrepancy\n----');
+  // await searchSiloDiscrepancy('earnedBeansDifference', -2200000000n, 20330000, 20401238, false);
+  // console.log('----\nSearching earnedBeansDifference discrepancy\n----');
+  // await searchSiloDiscrepancy('earnedBeansDifference', 0n, 18500000, 19000000, false);
+
+  await allEarnedBeans(18996054);
+  await allEarnedBeans(18996055);
 })();

@@ -8,6 +8,7 @@ const storageLayout = require('./contracts/abi/storageLayout.json');
 const ContractStorage = require('@beanstalk/contract-storage');
 const { providerThenable } = require('./contracts/provider.js');
 const { getActualFertilizedIndex } = require('./utils/barn/barn-util.js');
+const { getDuneResult } = require('./contracts/dune.js');
 
 const BATCH_SIZE = 100;
 let BLOCK;
@@ -22,8 +23,8 @@ let sumUnrinsable = BigInt(0);
 
 let balances = {};
 
-async function checkBalance(line) {
-  const [_, account, _1, eventAmount, humidity, id] = line.split(',');
+async function checkBalance(row) {
+  const [account, eventAmount, humidity, id] = [row.account, row.amount, row.humidity, row.id];
 
   const [contractAmount, rinsableSprouts, unrinsableSprouts] = await Promise.all([
     retryable(() => fert.callStatic.balanceOf(account, id, { blockTag: BLOCK })).then(BigInt),
@@ -60,25 +61,18 @@ async function exportFert(block) {
 
   console.log('Checking Fert balances...');
 
-  // https://dune.com/queries/3899244
-  const fileStream = fs.createReadStream(`./inputs/fert${BLOCK}.csv`);
-  const rl = readline.createInterface({
-    input: fileStream,
-    crlfDelay: Infinity
-  });
+  const duneResult = await getDuneResult(3899244, BLOCK);
 
-  let linesBuffer = [];
-  for await (const line of rl) {
-    if (!line.includes('account')) {
-      linesBuffer.push(line);
-    }
-    if (linesBuffer.length >= BATCH_SIZE) {
-      await Promise.all(linesBuffer.map(checkBalance));
-      linesBuffer = [];
+  let rowBuffer = [];
+  for await (const row of duneResult.result.rows) {
+    rowBuffer.push(row);
+    if (rowBuffer.length >= BATCH_SIZE) {
+      await Promise.all(rowBuffer.map(checkBalance));
+      rowBuffer = [];
     }
   }
-  if (linesBuffer.length > 0) {
-    await Promise.all(linesBuffer.map(checkBalance));
+  if (rowBuffer.length > 0) {
+    await Promise.all(rowBuffer.map(checkBalance));
   }
 
   console.log(`\rChecked ${checkProgress} assets`);

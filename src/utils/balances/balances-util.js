@@ -4,13 +4,13 @@ const { BEAN, UNRIPE_BEAN, UNRIPE_LP } = require('../../contracts/addresses.js')
 const { WHITELISTED, WHITELISTED_LP } = require('../silo/silo-util.js');
 const { createAsyncERC20ContractGetter } = require('../../contracts/contract.js');
 const { l2Token } = require('../token.js');
+const { getDuneResult } = require('../../contracts/dune.js');
 
 async function getCurrentInternalBalances(bs, BLOCK, BATCH_SIZE) {
-  const balancesData = fs.readFileSync(`inputs/internal-balances${BLOCK}.csv`, 'utf8');
-  const entries = balancesData.split('\n').slice(1);
+  const balancesData = await getDuneResult(3907145, BLOCK);
   const promiseGenerators = [];
-  for (const entry of entries) {
-    const [account, token] = entry.split(',');
+  for (const entry of balancesData.result.rows) {
+    const [account, token] = [entry.account, entry.token];
     if (account && WHITELISTED.includes(token)) {
       promiseGenerators.push(async () => ({
         account,
@@ -38,11 +38,10 @@ async function getCurrentInternalBalances(bs, BLOCK, BATCH_SIZE) {
 async function getWithdrawals(bs, BLOCK, BATCH_SIZE) {
 
   // Determine potential withdrawal accounts/seasons
-  const withdrawalData = fs.readFileSync(`inputs/silo-withdrawn${BLOCK}.csv`, 'utf8');
-  const entries = withdrawalData.split('\n').slice(1);
+  const siloWithdrawn = await getDuneResult(3906871, BLOCK);
   const promiseGenerators = [];
-  for (const entry of entries) {
-    const [account, token, season] = entry.split(',');
+  for (const entry of siloWithdrawn.result.rows) {
+    const [account, token, season] = [entry.account, entry.token, entry.season];
     if (account) {
       promiseGenerators.push(async () => ({
         account,
