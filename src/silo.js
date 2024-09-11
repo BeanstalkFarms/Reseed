@@ -79,6 +79,10 @@ async function processRow(deposits, row) {
       stemTips[token] = await retryable(async () =>
         BigInt(await beanstalk.callStatic.stemTipForToken(token, { blockTag: BLOCK }))
       );
+      // Prior to gauge deployment: need to add 6 additional precision on stem tips
+      if (BLOCK < 19927634) {
+        stemTips[token] *= BigInt(10 ** 6);
+      }
     } catch (e) {
       // stemTipForToken did not exist
       stemTips[token] = seasonToStem(Number(await bs.s.season.current), stemStartSeason, getLegacySeedsPerToken(token))
