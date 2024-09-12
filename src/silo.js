@@ -190,16 +190,18 @@ async function transformStem(account, token, stem) {
 
 async function checkWallets(deposits) {
   // Add all-time depositors. Some may still have unclaimed earned beans and nothing else in silo.
-  console.log('Pulling all depositor accounts from dune...');
-  let newWallets = 0;
-  const duneResult = await getDuneResult(4050145, BLOCK);
-  for (const row of duneResult.result.rows) {
-    if (!deposits[row.account]) {
-      deposits[row.account] = {};
-      ++newWallets;
+  if (!DEBUG_ACCOUNT) {
+    console.log('Pulling all depositor accounts from dune...');
+    let newWallets = 0;
+    const duneResult = await getDuneResult(4050145, BLOCK);
+    for (const row of duneResult.result.rows) {
+      if (!deposits[row.account]) {
+        deposits[row.account] = {};
+        ++newWallets;
+      }
     }
+    console.log(`Added ${newWallets} additional wallets to check.`);
   }
-  console.log(`Added ${newWallets} additional wallets to check.`);
 
   const results = {};
   const depositors = Object.keys(deposits);
