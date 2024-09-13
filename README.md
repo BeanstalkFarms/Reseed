@@ -3,9 +3,9 @@ Storage migration for L2
 
 # Instructions
 
-WIP: Exports will be automatically pulled from Dune at the requested block and the below instructions can be ignored. Currently this is only implemented for the first Silo query.
+Run `npm run all <block>` to run the entirety of the scripts for the given block. A subset of scripts can be run as well, see main.js for available options.
 
-Generate the required exports from Dune and place in the `inputs` directory. These filenames should be appended with the block number that was used to generate the export. Then, run `npm run all <block>` with the same block number used in the Dune export.
+All of the below query results are pulled using `DUNE_API_KEY`.
 
 Silo: Dune query https://dune.com/queries/3849370
 Silo Withdrawn: Dune query https://dune.com/queries/3906871
