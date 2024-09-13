@@ -1,4 +1,5 @@
 const { exportFert } = require("./barn");
+const { exportCirculating } = require("./circulating");
 const { exportPlots } = require("./field");
 const { exportInternalBalances } = require("./internal-balance");
 const { exportMarket } = require("./market");
@@ -24,6 +25,7 @@ const { runVerification } = require("./verify");
       await exportFert(block);
       await exportMarket(block);
       await exportInternalBalances(block);
+      await exportCirculating(block);
       await exportStorage(block);
       await runVerification(block);
       break;
@@ -41,6 +43,9 @@ const { runVerification } = require("./verify");
       break;
     case 'balances':
       await exportInternalBalances(block);
+      break;
+    case 'circulating':
+      await exportCirculating(block);
       break;
     case 'storage':
       await exportStorage(block);

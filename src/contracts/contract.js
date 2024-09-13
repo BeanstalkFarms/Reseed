@@ -45,7 +45,7 @@ async function getContractAsync(address, abi, { provider, isLocal = false }) {
 
 // Generic for getting token balances
 async function getBalance(token, holder, blockNumber = 'latest') {
-  const erc20Contract = await getContractAsync(token, erc20Abi);
+  const erc20Contract = await getContractAsync(token, erc20Abi, { provider: providerThenable });
   const balance = await erc20Contract.callStatic.balanceOf(holder, { blockTag: blockNumber });
   balance.decimals = DECIMALS[token];
   return balance;
