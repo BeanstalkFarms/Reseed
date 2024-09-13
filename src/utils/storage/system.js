@@ -430,12 +430,12 @@ async function assetSettingsStruct(token) {
   ]);
   return {
     selector,
-    stalkEarnedPerSeason: stalkEarnedPerSeason * BigInt(10 ** 6),
+    stalkEarnedPerSeason,
     stalkIssuedPerBdv: stalkIssuedPerBdv * BigInt(10 ** 6),
     milestoneSeason,
     milestoneStem,
     encodeType,
-    deltaStalkEarnedPerSeason: deltaStalkEarnedPerSeason * BigInt(10 ** 6),
+    deltaStalkEarnedPerSeason,
     gaugePoints,
     optimalPercentDepositedBdv,
     gaugePointImplementation: null,
