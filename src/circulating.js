@@ -1,8 +1,12 @@
 const fs = require('fs');
 const { BEANSTALK, BEAN, UNRIPE_BEAN, UNRIPE_LP, CRV3, BEANWETH, BEANWSTETH, BEAN3CRV } = require("./contracts/addresses");
-const { getBalance } = require("./contracts/contract");
+const { getBalance, asyncBeanstalkContractGetter } = require("./contracts/contract");
 const { bigintDecimal } = require('./utils/json-formatter');
 const { getWellReserves } = require('./utils/well-data');
+
+// This is the amount of extra unripe beans which were erroneously created during the Replant.
+// A proportional amount of Ripe beans must be offset as well, though that must be calculated on chain at the time.
+const UNRIPE_BEAN_ADJUSTMENT = BigInt(11294722670839);
 
 let BLOCK;
 
@@ -17,18 +21,27 @@ async function exportCirculating(block) {
 }
 
 async function getCirculatingAmounts() {
+  const beanstalkContract = await asyncBeanstalkContractGetter();
   const [
     bsBeans,
+    bsBeansAdjustment,
     bsUrbeans,
     bsUrlps,
+    bsEthLp,
+    bsWstethLp,
+    bs3crvLp,
     beanwethReserves,
     beanwstethReserves,
     bean3crvBeans,
     bean3crv3crv
   ] = await Promise.all([
     getBalance(BEAN, BEANSTALK, BLOCK),
+    beanstalkContract.callStatic.getUnderlying(UNRIPE_BEAN, UNRIPE_BEAN_ADJUSTMENT, { blockTag: BLOCK }),
     getBalance(UNRIPE_BEAN, BEANSTALK, BLOCK),
     getBalance(UNRIPE_LP, BEANSTALK, BLOCK),
+    getBalance(BEANWETH, BEANSTALK, BLOCK),
+    getBalance(BEANWSTETH, BEANSTALK, BLOCK),
+    getBalance(BEAN3CRV, BEANSTALK, BLOCK),
     getWellReserves(BEANWETH, BLOCK),
     getWellReserves(BEANWSTETH, BLOCK),
     getBalance(BEAN, BEAN3CRV, BLOCK),
@@ -36,9 +49,12 @@ async function getCirculatingAmounts() {
   ]);
   return {
     beanstalk: {
-      beans: BigInt(bsBeans),
-      unripeBeans: BigInt(bsUrbeans),
+      beans: BigInt(bsBeans) - BigInt(bsBeansAdjustment),
+      unripeBeans: BigInt(bsUrbeans) - UNRIPE_BEAN_ADJUSTMENT,
       unripeLp: BigInt(bsUrlps),
+      ethLp: BigInt(bsEthLp),
+      wstethLp: BigInt(bsWstethLp),
+      bs3crvLp: BigInt(bs3crvLp)
     },
     pools: {
       beanweth: {
