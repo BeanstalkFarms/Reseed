@@ -1,5 +1,5 @@
 const fs = require('fs');
-const { UNRIPE_BEAN, UNRIPE_LP } = require('./contracts/addresses.js');
+const { UNRIPE_BEAN, UNRIPE_LP, BEANWETH, BEANWSTETH, BEAN3CRV } = require('./contracts/addresses.js');
 const { binarySearch } = require('./utils/binary-search.js');
 const { exportDeposits } = require('./silo.js');
 const { getDuneResult } = require('./contracts/dune.js');
@@ -7,6 +7,7 @@ const { runBatchPromises } = require('./utils/batch-promise.js');
 const retryable = require('./utils/retryable.js');
 const { asyncBeanstalkContractGetter } = require('./contracts/contract.js');
 const { bigintDecimal } = require('./utils/json-formatter.js');
+const { calcL2LpTokenSupply } = require('./utils/well-data.js');
 
 function stalkAnalysis(block) {
   const deposits = JSON.parse(fs.readFileSync(`results/deposits${block}.json`));
@@ -125,6 +126,10 @@ async function allEarnedBeans(block) {
   // console.log('----\nSearching earnedBeansDifference discrepancy\n----');
   // await searchSiloDiscrepancy('earnedBeansDifference', 0n, 18500000, 19000000, false);
 
-  await allEarnedBeans(18996054);
-  await allEarnedBeans(18996055);
+  // await allEarnedBeans(18996054);
+  // await allEarnedBeans(18996055);
+
+  console.log(await calcL2LpTokenSupply(BEANWETH, 20782285));
+  console.log(await calcL2LpTokenSupply(BEANWSTETH, 20782285));
+  console.log(await calcL2LpTokenSupply(BEAN3CRV, 20782285));
 })();

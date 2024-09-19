@@ -1,7 +1,8 @@
 const fs = require('fs');
-const { BEANSTALK, BEAN, UNRIPE_BEAN, UNRIPE_LP, WETH, WSTETH, CRV3, BEANWETH, BEANWSTETH, BEAN3CRV } = require("./contracts/addresses");
+const { BEANSTALK, BEAN, UNRIPE_BEAN, UNRIPE_LP, CRV3, BEANWETH, BEANWSTETH, BEAN3CRV } = require("./contracts/addresses");
 const { getBalance } = require("./contracts/contract");
 const { bigintDecimal } = require('./utils/json-formatter');
+const { getWellReserves } = require('./utils/well-data');
 
 let BLOCK;
 
@@ -20,20 +21,16 @@ async function getCirculatingAmounts() {
     bsBeans,
     bsUrbeans,
     bsUrlps,
-    beanwethBeans,
-    beanwethWeth,
-    beanwstethBeans,
-    beanwstethWsteth,
+    beanwethReserves,
+    beanwstethReserves,
     bean3crvBeans,
     bean3crv3crv
   ] = await Promise.all([
     getBalance(BEAN, BEANSTALK, BLOCK),
     getBalance(UNRIPE_BEAN, BEANSTALK, BLOCK),
     getBalance(UNRIPE_LP, BEANSTALK, BLOCK),
-    getBalance(BEAN, BEANWETH, BLOCK),
-    getBalance(WETH, BEANWETH, BLOCK),
-    getBalance(BEAN, BEANWSTETH, BLOCK),
-    getBalance(WSTETH, BEANWSTETH, BLOCK),
+    getWellReserves(BEANWETH, BLOCK),
+    getWellReserves(BEANWSTETH, BLOCK),
     getBalance(BEAN, BEAN3CRV, BLOCK),
     getBalance(CRV3, BEAN3CRV, BLOCK),
   ]);
@@ -45,12 +42,12 @@ async function getCirculatingAmounts() {
     },
     pools: {
       beanweth: {
-        bean: BigInt(beanwethBeans),
-        weth: BigInt(beanwethWeth),
+        bean: BigInt(beanwethReserves[0]),
+        weth: BigInt(beanwethReserves[1]),
       },
       beanwsteth: {
-        bean: BigInt(beanwstethBeans),
-        wsteth: BigInt(beanwstethWsteth),
+        bean: BigInt(beanwstethReserves[0]),
+        wsteth: BigInt(beanwstethReserves[1]),
       },
       bean3crv: {
         bean: BigInt(bean3crvBeans),

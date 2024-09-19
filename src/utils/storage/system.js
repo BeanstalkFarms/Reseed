@@ -78,10 +78,10 @@ async function systemStruct(options) {
   //   return a;
   // }, {});
 
-  // I dont think these are necessary on migration ?
+  // I dont think most of these are necessary on migration ?
   const convertCapacity = {};
   const oracleImplementation = {};
-  const shipmentRoutes = [];
+  const shipmentRoutes = shipmentRoutesList();
   const sop = {};
   const rain = {};
 
@@ -93,7 +93,7 @@ async function systemStruct(options) {
     weather,
     seedGauge,
     migration,
-    seedGaugeSettings
+    evaluationParameters
   ] = await Promise.all([
     siloStruct(),
     fieldStruct(),
@@ -102,7 +102,7 @@ async function systemStruct(options) {
     weatherStruct(),
     seedGaugeStruct(),
     migrationStruct(),
-    seedGaugeSettingsStruct()
+    evaluationParametersStruct()
   ]);
 
   const fields = {
@@ -141,8 +141,8 @@ async function systemStruct(options) {
     weather,
     seedGauge,
     rain,
-    migration,
-    seedGaugeSettings,
+    migration, // NOTE: this is now called l2Migration in the contracts
+    evaluationParameters,
     sop
   };
 }
@@ -408,7 +408,7 @@ async function whitelistStatusStructs() {
 
 async function assetSettingsStruct(token) {
   const [
-    selector,
+    selector_storage,
     stalkEarnedPerSeason,
     stalkIssuedPerBdv,
     milestoneSeason,
@@ -428,6 +428,8 @@ async function assetSettingsStruct(token) {
     bs.s.ss[token].gaugePoints,
     bs.s.ss[token].optimalPercentDepositedBdv
   ]);
+  // Bean3crv to use wellBdv selector
+  const selector = token === BEAN3CRV ? await bs.s.ss[BEANWETH].selector : selector_storage;
   return {
     selector,
     stalkEarnedPerSeason,
@@ -535,22 +537,47 @@ async function migrationStruct() {
   };
 }
 
-async function seedGaugeSettingsStruct() {
-  // TODO: these should be set to something?
+async function evaluationParametersStruct() {
   return {
-    maxBeanMaxLpGpPerBdvRatio: 0n,
-    minBeanMaxLpGpPerBdvRatio: 0n,
-    targetSeasonsToCatchUp: 0n,
-    podRateLowerBound: 0n,
-    podRateOptimal: 0n,
-    podRateUpperBound: 0n,
-    deltaPodDemandLowerBound: 0n,
-    deltaPodDemandUpperBound: 0n,
-    lpToSupplyRatioUpperBound: 0n,
-    lpToSupplyRatioOptimal: 0n,
-    lpToSupplyRatioLowerBound: 0n,
-    excessivePriceThreshold: 0n
+    maxBeanMaxLpGpPerBdvRatio: 100000000000000000000n,
+    minBeanMaxLpGpPerBdvRatio: 50000000000000000000n,
+    targetSeasonsToCatchUp: 4320n,
+    podRateLowerBound: 50000000000000000n,
+    podRateOptimal: 150000000000000000n,
+    podRateUpperBound: 250000000000000000n,
+    deltaPodDemandLowerBound: 950000000000000000n,
+    deltaPodDemandUpperBound: 1050000000000000000n,
+    lpToSupplyRatioUpperBound: 800000000000000000n,
+    lpToSupplyRatioOptimal: 40000000000000000n,
+    lpToSupplyRatioLowerBound: 12000000000000000n,
+    excessivePriceThreshold: 1050000n,
+    soilCoefficientHigh: 500000000000000000n,
+    soilCoefficientLow: 1500000000000000000n,
+    baseReward: 5000000n
   }
+}
+
+function shipmentRoutesList() {
+  return [
+    {
+      planContract: '0x0000000000000000000000000000000000000000',
+      planSelector: '0x7c655075',
+      recipient: '0x1',
+      data: '0x'
+    },
+    {
+      planContract: '0x0000000000000000000000000000000000000000',
+      planSelector: '0x12e8d3ed',
+      recipient: '0x2',
+      data: '0x0000000000000000000000000000000000000000000000000000000000000000'
+    },
+    {
+      planContract: '0x0000000000000000000000000000000000000000',
+      planSelector: '0x43055ba8',
+      recipient: '0x3',
+      data: '0x'
+    }
+  ];
 }
 
 const GerminationSideEnum = {

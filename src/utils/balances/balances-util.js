@@ -5,6 +5,7 @@ const { WHITELISTED, WHITELISTED_LP } = require('../silo/silo-util.js');
 const { createAsyncERC20ContractGetter } = require('../../contracts/contract.js');
 const { l2Token } = require('../token.js');
 const { getDuneResult } = require('../../contracts/dune.js');
+const { calcL2LpTokenSupply } = require('../well-data.js');
 
 async function getCurrentInternalBalances(bs, BLOCK, BATCH_SIZE) {
   const balancesData = await getDuneResult(3907145, BLOCK);
@@ -139,10 +140,7 @@ async function getL2TokenAmount(token, amount, BLOCK) {
   if (WHITELISTED_LP.includes(token)) {
     const l2TokenAddr = l2Token(token);
     if (!l2TokenSupply[l2TokenAddr]) {
-      // TODO: uncomment once contracts deployed on l2
-      // const tokenContract = await createAsyncERC20ContractGetter(token, { provider: arbProviderThenable })();
-      // l2TokenSupply[l2TokenAddr] = BigInt(await tokenContract.callStatic.totalSupply({ blockTag: BLOCK }));
-      l2TokenSupply[l2TokenAddr] = BigInt(10 ** 12);
+      l2TokenSupply[l2TokenAddr] = calcL2LpTokenSupply(l2TokenAddr, BLOCK);
     }
     l2amount = BigInt(Math.floor(l1percent * Number(l2TokenSupply[l2TokenAddr])));
   } else {
