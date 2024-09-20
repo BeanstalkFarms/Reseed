@@ -2,8 +2,9 @@ const fs = require('fs');
 const { getDuneResult } = require("./contracts/dune");
 const { providerThenable } = require("./contracts/provider");
 const { runBatchPromises } = require("./utils/batch-promise");
+const retryable = require('./utils/retryable');
 
-const BATCH_SIZE = 100;
+const BATCH_SIZE = 50;
 let BLOCK;
 
 let checkProgress = 0;
@@ -12,7 +13,7 @@ let checkProgress = 0;
 async function isContract(address) {
   const provider = await providerThenable;
   try {
-    return await provider.getCode(address) !== "0x";
+    return await provider.getCode(address, BLOCK) !== "0x";
   } catch (e) {
     return false;
   }
@@ -23,7 +24,7 @@ async function identifyContracts(addresses) {
   const results = []
   for (const account of addresses) {
     promiseGenerators.push(async () => {
-      if (await isContract(account)) {
+      if (await retryable(() => isContract(account))) {
         results.push(account);
       }
       process.stdout.write(`\r${++checkProgress}`);
@@ -47,7 +48,7 @@ async function exportContracts(block) {
   const allHolders = await getCurrentHolders();
 
   const total = allHolders.length;
-  console.log(`Processing ${total} accounts...`);
+  console.log(`Checking ${total} accounts...`);
   process.stdout.write(`\r0${' '.repeat((total).toString().length - 1)} / ${total}`);
   const contracts = await identifyContracts(allHolders);
 
