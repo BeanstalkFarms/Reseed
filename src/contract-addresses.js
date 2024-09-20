@@ -3,6 +3,7 @@ const { getDuneResult } = require("./contracts/dune");
 const { providerThenable } = require("./contracts/provider");
 const { runBatchPromises } = require("./utils/batch-promise");
 const retryable = require('./utils/retryable');
+const { ethers } = require('ethers');
 
 const BATCH_SIZE = 50;
 let BLOCK;
@@ -25,7 +26,7 @@ async function identifyContracts(addresses) {
   for (const account of addresses) {
     promiseGenerators.push(async () => {
       if (await retryable(() => isContract(account))) {
-        results.push(account);
+        results.push(ethers.getAddress(account));
       }
       process.stdout.write(`\r${++checkProgress}`);
     });

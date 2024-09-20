@@ -1,5 +1,5 @@
 const fs = require('fs');
-const { UNRIPE_BEAN, UNRIPE_LP, BEANWETH, BEANWSTETH, BEAN3CRV } = require('./contracts/addresses.js');
+const { BEAN, UNRIPE_BEAN, UNRIPE_LP, BEANWETH, BEANWSTETH, BEAN3CRV } = require('./contracts/addresses.js');
 const { binarySearch } = require('./utils/binary-search.js');
 const { exportDeposits } = require('./silo.js');
 const { getDuneResult } = require('./contracts/dune.js');
@@ -8,6 +8,7 @@ const retryable = require('./utils/retryable.js');
 const { asyncBeanstalkContractGetter } = require('./contracts/contract.js');
 const { bigintDecimal } = require('./utils/json-formatter.js');
 const { calcL2LpTokenSupply } = require('./utils/well-data.js');
+const { l2Token } = require('./utils/token.js');
 
 function stalkAnalysis(block) {
   const deposits = JSON.parse(fs.readFileSync(`results/deposits${block}.json`));
@@ -118,6 +119,105 @@ async function allEarnedBeans(block) {
   console.log(`Sum of all: ${sum}`);;
 }
 
+function contractAccountSums(block) {
+  const accountStorage = JSON.parse(fs.readFileSync(`results/storage-accounts${block}.json`));
+  const fertStorage = JSON.parse(fs.readFileSync(`results/storage-fertilizer${block}.json`));
+  const contractAccounts = JSON.parse(fs.readFileSync(`results/contract-accounts${block}.json`));
+
+  // Market listings/orders could be checked also
+  const summary = {
+    silo: {
+      tokens: {
+        [l2Token(BEAN)]: {
+          amount: 0n,
+          bdv: 0n
+        },
+        [l2Token(BEANWETH)]: {
+          amount: 0n,
+          bdv: 0n
+        },
+        [l2Token(BEANWSTETH)]: {
+          amount: 0n,
+          bdv: 0n
+        },
+        [l2Token(BEAN3CRV)]: {
+          amount: 0n,
+          bdv: 0n
+        },
+        [l2Token(UNRIPE_BEAN)]: {
+          amount: 0n,
+          bdv: 0n
+        },
+        [l2Token(UNRIPE_LP)]: {
+          amount: 0n,
+          bdv: 0n
+        }
+      },
+      stalk: 0n,
+      roots: 0n,
+      bdv: 0n
+    },
+    field: {
+      pods: 0n
+    },
+    barn: {
+      fert: 0n,
+    },
+    farm: {
+      tokens: {
+        [l2Token(BEAN)]: {
+          amount: 0n
+        },
+        [l2Token(BEANWETH)]: {
+          amount: 0n
+        },
+        [l2Token(BEANWSTETH)]: {
+          amount: 0n
+        },
+        [l2Token(BEAN3CRV)]: {
+          amount: 0n
+        },
+        [l2Token(UNRIPE_BEAN)]: {
+          amount: 0n
+        },
+        [l2Token(UNRIPE_LP)]: {
+          amount: 0n
+        }
+      }
+    }
+  }
+  for (const account of contractAccounts) {
+    const storage = accountStorage[account];
+    if (!storage) {
+      continue; // Would happen if this account only has circulating assets
+    }
+    summary.silo.stalk += BigInt(storage.stalk);
+    summary.silo.roots += BigInt(storage.roots);
+    for (const token in storage.depositIdList) {
+      for (const depositId of storage.depositIdList[token]) {
+        const depositIdDecimal = BigInt(depositId).toString(10);
+        summary.silo.bdv += BigInt(storage.deposits[depositIdDecimal].bdv);
+        summary.silo.tokens[token].amount += BigInt(storage.deposits[depositIdDecimal].amount);
+        summary.silo.tokens[token].bdv += BigInt(storage.deposits[depositIdDecimal].bdv);
+      }
+    }
+    for (const plotIndex in storage.fields[0].plots) {
+      summary.field.pods += BigInt(storage.fields[0].plots[plotIndex]);
+    }
+    for (const fertId in fertStorage._balances) {
+      for (const fertHolder in fertStorage._balances[fertId]) {
+        if (fertHolder === account) {
+          summary.barn.fert += BigInt(fertStorage._balances[fertId][fertHolder].amount);
+        }
+      }
+    }
+    for (const internalToken in storage.internalTokenBalance) {
+      summary.farm.tokens[internalToken].amount += BigInt(storage.internalTokenBalance[internalToken]);
+    }
+  }
+  console.log(JSON.stringify(summary, bigintDecimal, 2));
+}
+
 (async () => {
   // console.log('----\nSearching stalkDifference discrepancy\n----');
   // await searchSiloDiscrepancy('stalkDifference', 0n, 20567141, 20577510, false);
@@ -129,7 +229,9 @@ async function allEarnedBeans(block) {
   // await allEarnedBeans(18996054);
   // await allEarnedBeans(18996055);
 
-  console.log(await calcL2LpTokenSupply(BEANWETH, 20782285));
-  console.log(await calcL2LpTokenSupply(BEANWSTETH, 20782285));
-  console.log(await calcL2LpTokenSupply(BEAN3CRV, 20782285));
+  // console.log(await calcL2LpTokenSupply(BEANWETH, 20782285));
+  // console.log(await calcL2LpTokenSupply(BEANWSTETH, 20782285));
+  // console.log(await calcL2LpTokenSupply(BEAN3CRV, 20782285));
+
+  contractAccountSums(20736200);
 })();
