@@ -1,7 +1,7 @@
 const fs = require('fs');
 const { plentySeasons } = require('../../../inputs/plenty-seasons.js');
 const { BEANSTALK, BEAN, BEANWETH, BEANWSTETH, BEAN3CRV, UNRIPE_BEAN, UNRIPE_LP } = require('../../contracts/addresses.js');
-const { getActualActiveFertilizer, getActualFertilizedIndex, getActualUnfertilizedIndex, getClaimedSprouts } = require('../barn/barn-util.js');
+const { getActualActiveFertilizer, getActualFertilizedIndex, getActualUnfertilizedIndex, getClaimedSprouts, getRinsableSprouts } = require('../barn/barn-util.js');
 const { tokenEq, l2Token } = require('../token.js');
 const { createAsyncERC20ContractGetter } = require('../../contracts/contract.js');
 const { WHITELISTED, getSumOfUserTotals } = require('../silo/silo-util.js');
@@ -273,7 +273,7 @@ async function fertilizerStruct() {
     activeFertilizer,
     fertilizedIndex,
     unfertilizedIndex,
-    fertilizedPaidIndex: getClaimedSprouts(BLOCK),
+    fertilizedPaidIndex: getClaimedSprouts(BLOCK) + getRinsableSprouts(BLOCK),
     fertFirst,
     fertLast,
     bpf,
