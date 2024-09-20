@@ -1,5 +1,6 @@
 const { exportFert } = require("./barn");
 const { exportCirculating } = require("./circulating");
+const { exportContracts } = require("./contract-addresses");
 const { exportPlots } = require("./field");
 const { exportInternalBalances } = require("./internal-balance");
 const { exportMarket } = require("./market");
@@ -19,13 +20,14 @@ const { runVerification } = require("./verify");
   const block = parseInt(args[1]);
   switch (args[0]) {
     case 'all':
-      // Shouldn't use Promise.all here since each is already optimized for rate limits
+      // Shouldn't use Promise.all here since each is already optimized for rate limits (and some depend on previous)
       await exportDeposits(block);
       await exportPlots(block);
       await exportFert(block);
       await exportMarket(block);
       await exportInternalBalances(block);
       await exportCirculating(block);
+      await exportContracts(block);
       await exportStorage(block);
       await runVerification(block);
       break;
@@ -46,6 +48,9 @@ const { runVerification } = require("./verify");
       break;
     case 'circulating':
       await exportCirculating(block);
+      break;
+    case 'contracts':
+      await exportContracts(block);
       break;
     case 'storage':
       await exportStorage(block);

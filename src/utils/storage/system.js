@@ -6,6 +6,7 @@ const { tokenEq, l2Token } = require('../token.js');
 const { createAsyncERC20ContractGetter } = require('../../contracts/contract.js');
 const { WHITELISTED, getSumOfUserTotals } = require('../silo/silo-util.js');
 const { getL2TokenAmount } = require('../balances/balances-util.js');
+const { getUnripeBeanAdjustment } = require('../silo/unripe-bean-adjustment.js');
 
 let BLOCK;
 let bs;
@@ -450,18 +451,20 @@ async function unripeSettingsStructs() {
   const [
     urbeanUnderlyingToken,
     urbeanBalanceOfUnderlying,
+    urbeanAdjustment,
     urlpUnderlyingToken,
     urlpBalanceOfUnderlying
   ] = await Promise.all([
     bs.s.u[UNRIPE_BEAN].underlyingToken,
     bs.s.u[UNRIPE_BEAN].balanceOfUnderlying,
+    getUnripeBeanAdjustment(BLOCK),
     bs.s.u[UNRIPE_LP].underlyingToken,
     bs.s.u[UNRIPE_LP].balanceOfUnderlying
   ]);
   return {
     [l2Token(UNRIPE_BEAN)]: {
       underlyingToken: l2Token(urbeanUnderlyingToken),
-      balanceOfUnderlying: urbeanBalanceOfUnderlying
+      balanceOfUnderlying: urbeanBalanceOfUnderlying - urbeanAdjustment.ripeUnderlying
     },
     [l2Token(UNRIPE_LP)]: {
       underlyingToken: l2Token(urlpUnderlyingToken),
