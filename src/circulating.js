@@ -4,6 +4,7 @@ const { getBalance } = require("./contracts/contract");
 const { bigintDecimal } = require('./utils/json-formatter');
 const { getWellReserves } = require('./utils/well-data');
 const { getUnripeBeanAdjustment } = require('./utils/silo/unripe-bean-adjustment');
+const { getDuneResult } = require('./contracts/dune');
 
 let BLOCK;
 
@@ -15,6 +16,17 @@ async function exportCirculating(block) {
   const balancesOutFile = `results/contract-circulating${BLOCK}.json`;
   await fs.promises.writeFile(balancesOutFile, JSON.stringify(amounts, bigintDecimal, 2));
   console.log(`\rWrote contracts' circulating balances to ${balancesOutFile}`);
+
+  // Originall I provided these values in a simple csv file, retain the same formatting for simplicity.
+  const urbeanHolders = await getDuneResult(4045304, BLOCK);
+  const urbeanOutFile = `results/urbean-holders${BLOCK}.csv`;
+  await fs.promises.writeFile(urbeanOutFile, formatHoldersAsCsv(urbeanHolders));
+  console.log(`Wrote Unripe Bean token holders to ${urbeanOutFile}`);
+
+  const urlpHolders = await getDuneResult(4045324, BLOCK);
+  const urlpOutFile = `results/urlp-holders${BLOCK}.csv`;
+  await fs.promises.writeFile(urlpOutFile, formatHoldersAsCsv(urlpHolders));
+  console.log(`Wrote Unripe LP token holders to ${urlpOutFile}`);
 }
 
 async function getCirculatingAmounts() {
@@ -67,6 +79,14 @@ async function getCirculatingAmounts() {
       }
     }
   }
+}
+
+function formatHoldersAsCsv(duneResult) {
+  let result = 'account,balance\n';
+  for (const row of duneResult.result.rows) {
+    result += `${row.account},${row.balance}\n`;
+  }
+  return result;
 }
 
 module.exports = {
