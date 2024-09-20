@@ -7,7 +7,7 @@ const { runBatchPromises } = require('./utils/batch-promise.js');
 const retryable = require('./utils/retryable.js');
 const { asyncBeanstalkContractGetter } = require('./contracts/contract.js');
 const { bigintDecimal } = require('./utils/json-formatter.js');
-const { calcL2LpTokenSupply } = require('./utils/well-data.js');
+const { calcL2LpTokenSupply, getCurveReserves } = require('./utils/pool-data.js');
 const { l2Token } = require('./utils/token.js');
 
 function stalkAnalysis(block) {
@@ -231,7 +231,7 @@ function contractAccountSums(block) {
 
   // console.log(await calcL2LpTokenSupply(BEANWETH, 20782285));
   // console.log(await calcL2LpTokenSupply(BEANWSTETH, 20782285));
-  // console.log(await calcL2LpTokenSupply(BEAN3CRV, 20782285));
+  console.log(await calcL2LpTokenSupply(BEAN3CRV, 20782285));
 
-  contractAccountSums(20736200);
+  // contractAccountSums(20736200);
 })();

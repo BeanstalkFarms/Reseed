@@ -5,7 +5,7 @@ const { WHITELISTED, WHITELISTED_LP } = require('../silo/silo-util.js');
 const { createAsyncERC20ContractGetter } = require('../../contracts/contract.js');
 const { l2Token } = require('../token.js');
 const { getDuneResult } = require('../../contracts/dune.js');
-const { calcL2LpTokenSupply } = require('../well-data.js');
+const { calcL2LpTokenSupply } = require('../pool-data.js');
 
 async function getCurrentInternalBalances(bs, BLOCK, BATCH_SIZE) {
   const balancesData = await getDuneResult(3907145, BLOCK);

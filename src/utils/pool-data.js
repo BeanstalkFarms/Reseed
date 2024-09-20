@@ -1,10 +1,11 @@
 const fs = require('fs');
+const { ethers } = require('ethers');
 const { BEANWETH, BEANWSTETH, BEAN3CRV } = require("../contracts/addresses");
 const { getContractAsync } = require("../contracts/contract");
 const { arbProviderThenable, providerThenable } = require("../contracts/provider");
 const wellAbi = require('../contracts/abi/well.json');
 const wellFnAbi = require('../contracts/abi/well-function.json');
-const { ethers } = require('ethers');
+const curveAbi = require('../contracts/abi/curve.json');
 
 const CP2_FN = "0xBA5104f2df98974A83CD10d16E24282ce6Bb647f";
 const STABLE2_FN = "0xBA51055Ac3068Ffd884B495BF58314493cde9653";
@@ -12,6 +13,11 @@ const STABLE2_FN = "0xBA51055Ac3068Ffd884B495BF58314493cde9653";
 async function getWellReserves(wellAddress, BLOCK) {
   const well = await getContractAsync(wellAddress, wellAbi, { provider: providerThenable });
   return await well.callStatic.getReserves({ blockTag: BLOCK });
+}
+
+async function getCurveReserves(curvePool, BLOCK) {
+  const curve = await getContractAsync(curvePool, curveAbi, { provider: providerThenable });
+  return await curve.callStatic.get_balances({ blockTag: BLOCK });
 }
 
 async function calcL2LpTokenSupply(lpTokenAddressL1, BLOCK_L1) {
@@ -50,5 +56,6 @@ const LP_NAME_MAPPING = {
 
 module.exports = {
   getWellReserves,
+  getCurveReserves,
   calcL2LpTokenSupply
 };

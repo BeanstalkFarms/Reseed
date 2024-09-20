@@ -2,7 +2,7 @@ const fs = require('fs');
 const { BEANSTALK, BEAN, UNRIPE_BEAN, UNRIPE_LP, CRV3, BEANWETH, BEANWSTETH, BEAN3CRV } = require("./contracts/addresses");
 const { getBalance } = require("./contracts/contract");
 const { bigintDecimal } = require('./utils/json-formatter');
-const { getWellReserves } = require('./utils/well-data');
+const { getWellReserves, getCurveReserves } = require('./utils/pool-data');
 const { getUnripeBeanAdjustment } = require('./utils/silo/unripe-bean-adjustment');
 const { getDuneResult } = require('./contracts/dune');
 
@@ -40,8 +40,7 @@ async function getCirculatingAmounts() {
     bs3crvLp,
     beanwethReserves,
     beanwstethReserves,
-    bean3crvBeans,
-    bean3crv3crv
+    bean3crvReserves,
   ] = await Promise.all([
     getBalance(BEAN, BEANSTALK, BLOCK),
     getBalance(UNRIPE_BEAN, BEANSTALK, BLOCK),
@@ -52,8 +51,7 @@ async function getCirculatingAmounts() {
     getBalance(BEAN3CRV, BEANSTALK, BLOCK),
     getWellReserves(BEANWETH, BLOCK),
     getWellReserves(BEANWSTETH, BLOCK),
-    getBalance(BEAN, BEAN3CRV, BLOCK),
-    getBalance(CRV3, BEAN3CRV, BLOCK),
+    getCurveReserves(BEAN3CRV, BLOCK)
   ]);
   return {
     beanstalk: {
@@ -74,8 +72,8 @@ async function getCirculatingAmounts() {
         wsteth: BigInt(beanwstethReserves[1]),
       },
       bean3crv: {
-        bean: BigInt(bean3crvBeans),
-        '3crv': BigInt(bean3crv3crv)
+        bean: BigInt(bean3crvReserves[0]),
+        '3crv': BigInt(bean3crvReserves[1])
       }
     }
   }
