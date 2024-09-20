@@ -140,7 +140,7 @@ async function getL2TokenAmount(token, amount, BLOCK) {
   if (WHITELISTED_LP.includes(token)) {
     const l2TokenAddr = l2Token(token);
     if (!l2TokenSupply[l2TokenAddr]) {
-      l2TokenSupply[l2TokenAddr] = calcL2LpTokenSupply(l2TokenAddr, BLOCK);
+      l2TokenSupply[l2TokenAddr] = await calcL2LpTokenSupply(token, BLOCK);
     }
     l2amount = BigInt(Math.floor(l1percent * Number(l2TokenSupply[l2TokenAddr])));
   } else {

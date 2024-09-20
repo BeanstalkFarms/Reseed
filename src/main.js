@@ -21,15 +21,18 @@ const { runVerification } = require("./verify");
   switch (args[0]) {
     case 'all':
       // Shouldn't use Promise.all here since each is already optimized for rate limits (and some depend on previous)
+      await exportCirculating(block);
       await exportDeposits(block);
       await exportPlots(block);
       await exportFert(block);
       await exportMarket(block);
       await exportInternalBalances(block);
-      await exportCirculating(block);
       await exportContracts(block);
       await exportStorage(block);
       await runVerification(block);
+      break;
+    case 'circulating':
+      await exportCirculating(block);
       break;
     case 'silo':
       await exportDeposits(block);
@@ -45,9 +48,6 @@ const { runVerification } = require("./verify");
       break;
     case 'balances':
       await exportInternalBalances(block);
-      break;
-    case 'circulating':
-      await exportCirculating(block);
       break;
     case 'contracts':
       await exportContracts(block);
