@@ -11,7 +11,7 @@ async function getActualFertilizedIndex(bs) {
 }
 
 async function getActualUnfertilizedIndex(bs) {
-  return await bs.s.unfertilizedIndex - (BigInt(882) - BigInt(147) * await bs.s.bpf);
+  return await bs.s.unfertilizedIndex - BigInt(882 * 10 ** 6);
 }
 ///
 

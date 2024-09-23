@@ -266,6 +266,8 @@ async function fertilizerStruct() {
     }
     current = next;
   }
+  // id 6000000 over recorded 147 units 
+  fertilizer[BigInt(6000000)] -= BigInt(147);
 
   return {
     fertilizer,

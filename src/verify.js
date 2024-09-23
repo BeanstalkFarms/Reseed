@@ -155,12 +155,9 @@ function checkSystemVsAccounts() {
     }
   }
 
-  // Expecting a difference of 147 for id 6m, see barn-util.js
   for (const fertId in systemStorage.fert.fertilizer) {
     if (BigInt(systemStorage.fert.fertilizer[fertId]) !== fertilizerTotals[fertId]) {
-      if (fertId !== '6000000' || BigInt(systemStorage.fert.fertilizer[fertId]) - fertilizerTotals[fertId] !== 147n) {
-        console.log(`[WARNING]: Fertilizer amount mismatch for ${fertId}`);
-      }
+      console.log(`[WARNING]: Fertilizer amount mismatch for ${fertId}`);
     }
   }
 }
