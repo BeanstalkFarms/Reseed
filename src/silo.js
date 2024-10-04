@@ -417,17 +417,26 @@ async function exportDeposits(block) {
   const depositsOutput = {
     accounts: deposits,
     totals: Object.keys(deposits).reduce((a, next) => {
-      a.stalkMinusGerminating += deposits[next].totals.stalkMinusGerminating;
-      a.stalkInclGerminating += deposits[next].totals.stalkInclGerminating;
-      a.stalkIfMownMinusGerminating += deposits[next].totals.stalkIfMownMinusGerminating;
-      a.stalkIfMownInclGerminating += deposits[next].totals.stalkIfMownInclGerminating;
+      const depositorTotals = deposits[next].totals;
+      a.stalkMinusGerminating += depositorTotals.stalkMinusGerminating;
+      a.stalkInclGerminating += depositorTotals.stalkInclGerminating;
+      a.stalkIfMownMinusGerminating += depositorTotals.stalkIfMownMinusGerminating;
+      a.stalkIfMownInclGerminating += depositorTotals.stalkIfMownInclGerminating;
+      for (const token of Object.keys(depositorTotals).filter(k => k.startsWith('0x'))) {
+        if (!a.tokens[token]) {
+          a.tokens[token] = { amount: 0n, bdv: 0n };
+        }
+        a.tokens[token].amount += depositorTotals[token].amount;
+        a.tokens[token].bdv += depositorTotals[token].bdv;
+      }
       return a;
     }, {
       stalkMinusGerminating: 0n,
       stalkInclGerminating: 0n,
       stalkIfMownMinusGerminating: 0n,
       stalkIfMownInclGerminating: 0n,
-      stemTips
+      stemTips,
+      tokens: {}
     })
   };
 
