@@ -36,6 +36,11 @@ async function getCurrentInternalBalances(bs, BLOCK, BATCH_SIZE) {
   return internalTokenBalances;
 }
 
+function getTotalInternalBalance(token, BLOCK) {
+  const balancesFile = JSON.parse(fs.readFileSync(`results/internal-balances${BLOCK}.json`));
+  return BigInt(balancesFile.totals[token].total);
+}
+
 async function getWithdrawals(bs, BLOCK, BATCH_SIZE) {
 
   // Determine potential withdrawal accounts/seasons
@@ -152,6 +157,7 @@ async function getL2TokenAmount(token, amount, BLOCK) {
 
 module.exports = {
   getCurrentInternalBalances,
+  getTotalInternalBalance,
   getWithdrawals,
   getUnpickedUnripe,
   getRinsableUserSprouts,

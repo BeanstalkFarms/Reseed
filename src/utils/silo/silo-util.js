@@ -82,6 +82,11 @@ function getSumOfUserTotals(block) {
   }
 }
 
+function getTotalDepositedAmount(token, BLOCK) {
+  const depositsFile = JSON.parse(fs.readFileSync(`results/deposits${BLOCK}.json`));
+  return BigInt(depositsFile.totals[token].amount);
+}
+
 module.exports = {
   packAddressAndStem,
   seasonToStem,
@@ -90,6 +95,7 @@ module.exports = {
   getBean3CrvUnripeLP,
   getBeanLusdUnripeLP,
   getSumOfUserTotals,
+  getTotalDepositedAmount,
   WHITELISTED: [BEAN, BEANWETH, BEANWSTETH, BEAN3CRV, UNRIPE_BEAN, UNRIPE_LP],
   WHITELISTED_LP: [BEANWETH, BEAN3CRV, BEANWSTETH]
 }

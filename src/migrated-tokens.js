@@ -1,10 +1,26 @@
-const fs = require('fs');
-const { BEANSTALK, BEAN, UNRIPE_BEAN, UNRIPE_LP, CRV3, BEANWETH, BEANWSTETH, BEAN3CRV } = require("./contracts/addresses");
-const { getBalance } = require("./contracts/contract");
-const { bigintDecimal } = require('./utils/json-formatter');
-const { getRemoveLiquidityOut } = require('./utils/pool-data');
-const { getUnripeBeanAdjustment } = require('./utils/silo/unripe-bean-adjustment');
-const { getDuneResult } = require('./contracts/dune');
+const fs = require("fs");
+const {
+  BEANSTALK,
+  BEAN,
+  UNRIPE_BEAN,
+  UNRIPE_LP,
+  CRV3,
+  BEANWETH,
+  BEANWSTETH,
+  BEAN3CRV,
+} = require("./contracts/addresses");
+const {
+  getBalance,
+  asyncBeanstalkContractGetter,
+} = require("./contracts/contract");
+const { bigintDecimal } = require("./utils/json-formatter");
+const { getRemoveLiquidityOut } = require("./utils/pool-data");
+const {
+  getUnripeBeanAdjustment,
+} = require("./utils/silo/unripe-bean-adjustment");
+const { getDuneResult } = require("./contracts/dune");
+const { getTotalDepositedAmount } = require("./utils/silo/silo-util");
+const { getTotalInternalBalance } = require("./utils/balances/balances-util");
 
 let BLOCK;
 
@@ -14,7 +30,10 @@ async function exportMigratedTokens(block) {
   const amounts = await getCirculatingAmounts();
 
   const balancesOutFile = `results/migrated-tokens${BLOCK}.json`;
-  await fs.promises.writeFile(balancesOutFile, JSON.stringify(amounts, bigintDecimal, 2));
+  await fs.promises.writeFile(
+    balancesOutFile,
+    JSON.stringify(amounts, bigintDecimal, 2)
+  );
   console.log(`\rWrote contracts' circulating balances to ${balancesOutFile}`);
 
   // Originall I provided these values in a simple csv file, retain the same formatting for simplicity.
@@ -30,9 +49,21 @@ async function exportMigratedTokens(block) {
 }
 
 async function getCirculatingAmounts() {
-  // TODO: set these values to deposited + farm + unripe lp's underlying
-  const migratedBeanWethLp = 0;
-  const migratedBeanWstethLp = 0;
+  // Migrated LP tokens is deposited + farm + unripe lp's underlying
+  const beanstalk = await asyncBeanstalkContractGetter();
+  const underlyingLp = BigInt(await beanstalk.getTotalUnderlying(UNRIPE_LP));
+  const migratedBeanWethLp =
+    getTotalDepositedAmount(BEANWETH, BLOCK) +
+    getTotalInternalBalance(BEANWETH, BLOCK);
+  const migratedBeanWstethLp =
+    getTotalDepositedAmount(BEANWSTETH, BLOCK) +
+    getTotalInternalBalance(BEANWSTETH, BLOCK) +
+    underlyingLp;
+  console.log({
+    underlyingLp,
+    migratedBeanWethLp,
+    migratedBeanWstethLp,
+  });
   const [
     bsBeans,
     bsUrbeans,
@@ -42,7 +73,7 @@ async function getCirculatingAmounts() {
     bsWstethLp,
     bs3crvLp,
     beanwethMigrated,
-    beanwstethMigrated
+    beanwstethMigrated,
   ] = await Promise.all([
     getBalance(BEAN, BEANSTALK, BLOCK),
     getBalance(UNRIPE_BEAN, BEANSTALK, BLOCK),
@@ -61,7 +92,7 @@ async function getCirculatingAmounts() {
       unripeLp: BigInt(bsUrlps),
       ethLp: BigInt(bsEthLp),
       wstethLp: BigInt(bsWstethLp),
-      bs3crvLp: BigInt(bs3crvLp)
+      bs3crvLp: BigInt(bs3crvLp),
     },
     pools: {
       beanweth: {
@@ -73,15 +104,15 @@ async function getCirculatingAmounts() {
         wsteth: BigInt(beanwstethMigrated[1]),
       },
       bean3crv: {
-        bean: 'to be hardcoded elsewhere',
-        usdc: 'to be hardcoded elsewhere'
-      }
-    }
-  }
+        bean: "to be hardcoded elsewhere",
+        usdc: "to be hardcoded elsewhere",
+      },
+    },
+  };
 }
 
 function formatHoldersAsCsv(duneResult) {
-  let result = 'account,balance\n';
+  let result = "account,balance\n";
   for (const row of duneResult.result.rows) {
     result += `${row.account},${row.balance}\n`;
   }
@@ -89,5 +120,5 @@ function formatHoldersAsCsv(duneResult) {
 }
 
 module.exports = {
-  exportMigratedTokens
+  exportMigratedTokens,
 };

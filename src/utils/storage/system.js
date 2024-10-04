@@ -5,7 +5,7 @@ const { getActualActiveFertilizer, getActualFertilizedIndex, getActualUnfertiliz
 const { tokenEq, l2Token } = require('../token.js');
 const { createAsyncERC20ContractGetter } = require('../../contracts/contract.js');
 const { WHITELISTED, getSumOfUserTotals } = require('../silo/silo-util.js');
-const { getL2TokenAmount } = require('../balances/balances-util.js');
+const { getL2TokenAmount, getTotalInternalBalance } = require('../balances/balances-util.js');
 const { getUnripeBeanAdjustment } = require('../silo/unripe-bean-adjustment.js');
 
 let BLOCK;
@@ -167,10 +167,9 @@ function getMarketMappings() {
 }
 
 async function getInternalBalanceMapping() {
-  const balancesFile = JSON.parse(fs.readFileSync(`results/internal-balances${BLOCK}.json`));
   const internalBalances = {};
   for (const token in balancesFile.totals) {
-    internalBalances[l2Token(token)] = await getL2TokenAmount(token, BigInt(balancesFile.totals[token].total), BLOCK);
+    internalBalances[l2Token(token)] = await getL2TokenAmount(token, getTotalInternalBalance(token, BLOCK), BLOCK);
   }
   return internalBalances;
 }
