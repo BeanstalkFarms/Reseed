@@ -1,6 +1,6 @@
 const fs = require('fs');
 const { BEANSTALK, BEAN, BEANWSTETH, UNRIPE_BEAN, UNRIPE_LP } = require('./contracts/addresses.js');
-const { createAsyncERC20ContractGetter, asyncBeanstalkContractGetter } = require("./contracts/contract");
+const { createAsyncERC20ContractGetter, asyncBeanstalkContractGetter } = require('./contracts/contract');
 const { tokenEq } = require('./utils/token.js');
 const { getRinsableSprouts } = require('./utils/barn/barn-util.js');
 const storageLayout = require('./contracts/abi/storageLayout.json');
@@ -15,7 +15,6 @@ let beanstalk;
 let bs;
 
 async function checkContractTokens() {
-
   // Get total deposited amount of each token
   const totalDeposited = {};
   const sumInternal = {};
@@ -23,7 +22,7 @@ async function checkContractTokens() {
   const allDeposits = JSON.parse(fs.readFileSync(`results/deposits${BLOCK}.json`));
   for (const account in allDeposits.accounts) {
     for (const token in allDeposits.accounts[account].totals) {
-      if (!token.startsWith("0x")) {
+      if (!token.startsWith('0x')) {
         continue;
       }
       if (!totalDeposited[token]) {
@@ -51,7 +50,7 @@ async function checkContractTokens() {
     const beanstalkBalance = BigInt(await contract.balanceOf(BEANSTALK, { blockTag: BLOCK }));
     const withdrawn = await bs.s.siloBalances[token].withdrawn;
     let difference = beanstalkBalance - totalDeposited[token].amount - sumInternal[token] - withdrawn;
-    console.log('-------------------------------------------------------------')
+    console.log('-------------------------------------------------------------');
     console.log(`Token: ${token}`);
     console.log(`Beanstalk Contract Balance: ${beanstalkBalance}`);
     console.log(`Sum of Deposited:           ${totalDeposited[token].amount}`);
@@ -73,9 +72,11 @@ async function checkContractTokens() {
       difference -= sumUnpicked[token];
     }
     if ([BEAN, BEANWSTETH].includes(token)) {
-      const underlying = BigInt(await beanstalk.callStatic.getTotalUnderlying(token === BEAN ? UNRIPE_BEAN : UNRIPE_LP, { blockTag: BLOCK }));
-      console.log(`Sum of Ripe underlying:     ${underlying}`)
-      difference -= underlying
+      const underlying = BigInt(
+        await beanstalk.callStatic.getTotalUnderlying(token === BEAN ? UNRIPE_BEAN : UNRIPE_LP, { blockTag: BLOCK })
+      );
+      console.log(`Sum of Ripe underlying:     ${underlying}`);
+      difference -= underlying;
     }
     console.log(`Net Difference:             ${difference}`);
   }
@@ -112,7 +113,7 @@ function checkSystemVsAccounts() {
         siloBalances[token] = {
           amount: 0n,
           bdv: 0n
-        }
+        };
       }
       for (let depositId of accountStorage[account].depositIdList[token]) {
         depositId = BigInt(depositId);
@@ -137,21 +138,33 @@ function checkSystemVsAccounts() {
       console.log((v1 - v2).toString(10));
       console.log();
     }
-  }
+  };
 
   // Compare against system values
   for (const token in systemStorage.internalTokenBalanceTotal) {
-    check(BigInt(systemStorage.internalTokenBalanceTotal[token]), (internalTokenBalanceTotal[token] ?? 0n), `[WARNING]: Internal balance sum mismatch for ${token}`);
+    check(
+      BigInt(systemStorage.internalTokenBalanceTotal[token]),
+      internalTokenBalanceTotal[token] ?? 0n,
+      `[WARNING]: Internal balance sum mismatch for ${token}`
+    );
   }
 
   check(fieldEnd, BigInt(systemStorage.fields[0].pods), '[WARNING]: Field pod line length mismatch');
 
   for (const token in systemStorage.silo.balances) {
     if (BigInt(systemStorage.silo.balances[token].deposited) !== (siloBalances[token]?.amount ?? 0n)) {
-      check(BigInt(systemStorage.silo.balances[token].deposited), (siloBalances[token]?.amount ?? 0n), `[WARNING]: Silo deposited amount mismatch for ${token}`);
+      check(
+        BigInt(systemStorage.silo.balances[token].deposited),
+        siloBalances[token]?.amount ?? 0n,
+        `[WARNING]: Silo deposited amount mismatch for ${token}`
+      );
     }
     if (BigInt(systemStorage.silo.balances[token].depositedBdv) !== (siloBalances[token]?.bdv ?? 0n)) {
-      check(BigInt(systemStorage.silo.balances[token].depositedBdv), (siloBalances[token]?.bdv ?? 0n), `[WARNING]: Silo deposited bdv mismatch for ${token}`);
+      check(
+        BigInt(systemStorage.silo.balances[token].depositedBdv),
+        siloBalances[token]?.bdv ?? 0n,
+        `[WARNING]: Silo deposited bdv mismatch for ${token}`
+      );
     }
   }
 
@@ -163,7 +176,6 @@ function checkSystemVsAccounts() {
 }
 
 async function runVerification(block) {
-
   BLOCK = block;
   beanstalk = await asyncBeanstalkContractGetter();
   bs = new ContractStorage(await providerThenable, BEANSTALK, storageLayout, BLOCK);

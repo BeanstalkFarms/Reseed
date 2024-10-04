@@ -42,7 +42,6 @@ function getTotalInternalBalance(token, BLOCK) {
 }
 
 async function getWithdrawals(bs, BLOCK, BATCH_SIZE) {
-
   // Determine potential withdrawal accounts/seasons
   const siloWithdrawn = await getDuneResult(3906871, BLOCK);
   const promiseGenerators = [];
@@ -74,7 +73,6 @@ async function getWithdrawals(bs, BLOCK, BATCH_SIZE) {
 }
 
 async function getUnpickedUnripe(bs, BLOCK, BATCH_SIZE) {
-
   const beanMerkle = JSON.parse(fs.readFileSync(`inputs/unripe-beans-merkle.json`));
   const lpMerkle = JSON.parse(fs.readFileSync(`inputs/unripe-lp-merkle.json`));
 
@@ -89,7 +87,7 @@ async function getUnpickedUnripe(bs, BLOCK, BATCH_SIZE) {
         amount: BigInt(merkle[account].amount)
       };
     }
-  }
+  };
 
   for (const account in beanMerkle) {
     promiseGenerators.push(promiseFactory(UNRIPE_BEAN, account, beanMerkle));
@@ -130,7 +128,6 @@ function getRinsableUserSprouts(BLOCK) {
 const l1TokenSupply = {};
 const l2TokenSupply = {};
 async function getL2TokenAmount(token, amount, BLOCK) {
-
   if (amount === 0n) {
     return 0n;
   }
@@ -162,4 +159,4 @@ module.exports = {
   getUnpickedUnripe,
   getRinsableUserSprouts,
   getL2TokenAmount
-}
+};

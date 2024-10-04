@@ -7,4 +7,4 @@ function getAmountInOrders(block) {
 
 module.exports = {
   getAmountInOrders
-}
+};

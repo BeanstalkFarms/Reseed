@@ -16,7 +16,6 @@ let beanstalk;
 let bs;
 
 async function exportStorage(block) {
-  
   BLOCK = block;
 
   beanstalk = await asyncBeanstalkContractGetter();
@@ -45,9 +44,8 @@ async function exportStorage(block) {
   const systemOutFile = `results/storage-system${BLOCK}.json`;
   await fs.promises.writeFile(systemOutFile, addressChecksum(JSON.stringify(system, bigintHex, 2)));
   console.log(`\rWrote system storage to ${systemOutFile}`);
-
 }
 
 module.exports = {
   exportStorage
-}
+};

@@ -1,7 +1,6 @@
 const fs = require('fs');
 
 function fertilizerStorageBalances(block) {
-
   const fertData = JSON.parse(fs.readFileSync(`results/fert${block}.json`));
   const lastBpf = BigInt(fertData.totals.bpf);
 
@@ -14,7 +13,7 @@ function fertilizerStorageBalances(block) {
         amount: BigInt(fertData.accounts[account][fertId].amount),
         // All accounts get the same lastBpf since their sprouts were claimed
         lastBpf
-      }
+      };
     }
     return result;
   }, {});
@@ -26,4 +25,4 @@ function fertilizerStorageBalances(block) {
 
 module.exports = {
   fertilizerStorageBalances
-}
+};

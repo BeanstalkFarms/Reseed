@@ -48,13 +48,12 @@ async function checkBalance(row) {
     rinsableSprouts,
     unrinsableSprouts,
     humidity
-  }
+  };
 
   process.stdout.write(`\r${++checkProgress} / ?`);
 }
 
 async function exportFert(block) {
-
   BLOCK = block;
   fert = await asyncFertContractGetter();
   bs = new ContractStorage(await providerThenable, BEANSTALK, storageLayout, BLOCK);
@@ -83,19 +82,18 @@ async function exportFert(block) {
   const results = {
     accounts: balances,
     totals: {
-      sumClaimed: await getActualFertilizedIndex(bs) - sumRinsable,
+      sumClaimed: (await getActualFertilizedIndex(bs)) - sumRinsable,
       sumRinsable,
       sumUnrinsable,
       bpf: await bs.s.bpf
     }
-  }
+  };
 
   const outFile = `results/fert${BLOCK}.json`;
   await fs.promises.writeFile(outFile, JSON.stringify(results, bigintDecimal, 2));
   console.log(`Fertilizer balances exported to ${outFile}`);
-
 }
 
 module.exports = {
   exportFert
-}
+};

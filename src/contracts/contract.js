@@ -1,4 +1,4 @@
-const ethers = require('ethers')
+const ethers = require('ethers');
 const { providerThenable, localProvider } = require('./provider.js');
 const { Contract } = require('alchemy-sdk');
 const { BEANSTALK, FERTILIZER, DECIMALS } = require('./addresses.js');
@@ -22,15 +22,18 @@ async function getContractAsync(address, abi, { provider, isLocal = false }) {
     } else {
       const contract = new ethers.Contract(address, abi, localProvider);
       const handler = {
-        get: function(_, prop, _1) {
+        get: function (_, prop, _1) {
           if (prop === 'then') {
             return contract;
           } else if (prop === 'callStatic') {
-            return new Proxy({}, {
-              get: function(_, prop, _1) {
-                return contract[prop];
+            return new Proxy(
+              {},
+              {
+                get: function (_, prop, _1) {
+                  return contract[prop];
+                }
               }
-            });
+            );
           }
           return contract[prop];
         }
@@ -52,9 +55,15 @@ async function getBalance(token, holder, blockNumber = 'latest') {
 }
 
 module.exports = {
-  asyncBeanstalkContractGetter: async ({ provider, isLocal } = { provider: providerThenable, isLocal: false}) => getContractAsync(BEANSTALK, beanAbi, { provider, isLocal }),
-  asyncFertContractGetter: async ({ provider, isLocal } = { provider: providerThenable, isLocal: false}) => getContractAsync(FERTILIZER, fertAbi, { provider, isLocal }),
-  createAsyncERC20ContractGetter: (address, { provider, isLocal } = { provider: providerThenable, isLocal: false}) => async () => getContractAsync(address, erc20Abi, { provider, isLocal }),
-  getContractAsync: async (address, abi, { provider, isLocal } = { provider: providerThenable, isLocal: false}) => getContractAsync(address, abi, { provider, isLocal }),
+  asyncBeanstalkContractGetter: async ({ provider, isLocal } = { provider: providerThenable, isLocal: false }) =>
+    getContractAsync(BEANSTALK, beanAbi, { provider, isLocal }),
+  asyncFertContractGetter: async ({ provider, isLocal } = { provider: providerThenable, isLocal: false }) =>
+    getContractAsync(FERTILIZER, fertAbi, { provider, isLocal }),
+  createAsyncERC20ContractGetter:
+    (address, { provider, isLocal } = { provider: providerThenable, isLocal: false }) =>
+    async () =>
+      getContractAsync(address, erc20Abi, { provider, isLocal }),
+  getContractAsync: async (address, abi, { provider, isLocal } = { provider: providerThenable, isLocal: false }) =>
+    getContractAsync(address, abi, { provider, isLocal }),
   getBalance: getBalance
 };

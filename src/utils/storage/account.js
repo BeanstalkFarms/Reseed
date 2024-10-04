@@ -15,7 +15,6 @@ let allAccounts;
 let walletProgress = 0;
 
 async function allAccountStructs(options) {
-
   console.log('Gathering accounts info...');
 
   BLOCK = options.block;
@@ -28,9 +27,11 @@ async function allAccountStructs(options) {
   allPlots = JSON.parse(fs.readFileSync(`results/pods${BLOCK}.json`));
   allBalances = JSON.parse(fs.readFileSync(`results/internal-balances${BLOCK}.json`));
 
-  allAccounts = [...new Set([...Object.keys(allDeposits.accounts), ...Object.keys(allPlots), ...Object.keys(allBalances.accounts)])];
+  allAccounts = [
+    ...new Set([...Object.keys(allDeposits.accounts), ...Object.keys(allPlots), ...Object.keys(allBalances.accounts)])
+  ];
 
-  const promiseGenerators = allAccounts.map(a => async () => ({
+  const promiseGenerators = allAccounts.map((a) => async () => ({
     input: a,
     output: await accountStruct(a)
   }));
@@ -44,12 +45,7 @@ async function allAccountStructs(options) {
 }
 
 async function accountStruct(account) {
-
-  const [
-    actualLastUpdate,
-    lastSop,
-    lastRain
-  ] = await Promise.all([
+  const [actualLastUpdate, lastSop, lastRain] = await Promise.all([
     bs.s.a[account].lastUpdate,
     bs.s.a[account].lastSop,
     bs.s.a[account].lastRain
@@ -63,11 +59,11 @@ async function accountStruct(account) {
     0: getAccountField(account)
   };
 
-  const germinatingStalk = await germinatingMapping(account, actualLastUpdate)
+  const germinatingStalk = await germinatingMapping(account, actualLastUpdate);
   const internalTokenBalance = await getAccountInternalBalances(account);
 
   process.stdout.write(`\r${++walletProgress} / ${allAccounts.length}`);
-  
+
   return {
     roots,
     stalk,
@@ -88,7 +84,7 @@ async function accountStruct(account) {
     internalTokenBalance,
     // bytes32[16] _buffer_1,
     sop: {} // assumption being it doesnt sop before l2 migration
-  }
+  };
 }
 
 async function getAccountSilo(account) {
@@ -157,11 +153,15 @@ async function germinatingMapping(account, lastUpdate) {
 async function getAccountInternalBalances(account) {
   const internalTokenBalance = {};
   for (const token in allBalances.accounts[account]) {
-    internalTokenBalance[l2Token(token)] = await getL2TokenAmount(token, BigInt(allBalances.accounts[account][token].total), BLOCK);
+    internalTokenBalance[l2Token(token)] = await getL2TokenAmount(
+      token,
+      BigInt(allBalances.accounts[account][token].total),
+      BLOCK
+    );
   }
   return internalTokenBalance;
 }
 
 module.exports = {
   allAccountStructs
-}
+};

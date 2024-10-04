@@ -23,7 +23,6 @@ let balances = {};
 
 // Gets all plots from the subgraph, or a local cache if this was previously retrieved for the same block.
 async function getAllPlots() {
-  
   let allPlots;
   const plotCache = `inputs/cached-field-plots${BLOCK}.json`;
   if (fs.existsSync(plotCache)) {
@@ -43,7 +42,6 @@ async function getAllPlots() {
 
 // Retrieve all plots from the subgraph
 async function getPlotsFromSubgraph() {
-
   return await allPaginatedSG(
     beanstalkSG,
     `
@@ -73,7 +71,9 @@ async function checkPlot(plot) {
   if (plot.harvestedPods == '0') {
     const contractPlotAmount = await bs.s.a[account].field.plots[plot.index];
     if (BigInt(plot.pods) != contractPlotAmount) {
-      console.log(`[WARNING]: Plot at index ${plot.index} for farmer ${account} was not ${plot.pods}! (was ${contractPlotAmount})`);
+      console.log(
+        `[WARNING]: Plot at index ${plot.index} for farmer ${account} was not ${plot.pods}! (was ${contractPlotAmount})`
+      );
     }
     if (plot.harvestablePods != '0') {
       sumUnharvested += BigInt(plot.harvestablePods);
@@ -89,27 +89,30 @@ async function checkPlot(plot) {
   } else {
     sumHarvested += BigInt(plot.harvestedPods);
   }
-  
+
   process.stdout.write(`\r${++checkProgress}`);
 }
 
 async function exportPlots(block) {
-
   BLOCK = block;
   bs = new ContractStorage(await providerThenable, BEANSTALK, storageLayout, BLOCK);
 
   let allPlots = await getAllPlots();
 
-  const csvOutFile = `results/pods${BLOCK}.csv`
+  const csvOutFile = `results/pods${BLOCK}.csv`;
   const harvestableIndex = await bs.s.f.harvestable;
-  const csvString = 'account,index,amount,placeInLine,numHarvestable\n' + allPlots.map(b => {
-    const account = b.farmer.id;
-    const index = b.index / Math.pow(10, 6);
-    const pods = b.pods / Math.pow(10, 6);
-    const placeInLine = (b.index - Number(harvestableIndex)) / Math.pow(10, 6);
-    const harvestable = b.harvestablePods / Math.pow(10, 6);
-    return [account, index, pods, placeInLine, harvestable].join(',');
-  }).join('\n');
+  const csvString =
+    'account,index,amount,placeInLine,numHarvestable\n' +
+    allPlots
+      .map((b) => {
+        const account = b.farmer.id;
+        const index = b.index / Math.pow(10, 6);
+        const pods = b.pods / Math.pow(10, 6);
+        const placeInLine = (b.index - Number(harvestableIndex)) / Math.pow(10, 6);
+        const harvestable = b.harvestablePods / Math.pow(10, 6);
+        return [account, index, pods, placeInLine, harvestable].join(',');
+      })
+      .join('\n');
   await fs.promises.writeFile(csvOutFile, csvString);
   console.log(`Plots exported to ${csvOutFile}`);
 
@@ -130,8 +133,8 @@ async function exportPlots(block) {
   await runBatchPromises(allPromiseGenerators, BATCH_SIZE);
 
   console.log(`\rChecked ${checkProgress} assets`);
-  
-  if (amountInBalances + sumHarvested != await bs.s.f.pods) {
+
+  if (amountInBalances + sumHarvested != (await bs.s.f.pods)) {
     console.log(`[WARNING]: Sum of user balances did not equal total unharvested pods!`);
   }
 
@@ -141,9 +144,8 @@ async function exportPlots(block) {
   await fs.promises.writeFile(harvestableFile, JSON.stringify(unharvestedHarvestable, bigintDecimal, 2));
 
   console.log(`Pod balances exported to ${outFile}`);
-
 }
 
 module.exports = {
   exportPlots
-}
+};

@@ -1,7 +1,21 @@
 const fs = require('fs');
 const { plentySeasons } = require('../../../inputs/plenty-seasons.js');
-const { BEANSTALK, BEAN, BEANWETH, BEANWSTETH, BEAN3CRV, UNRIPE_BEAN, UNRIPE_LP } = require('../../contracts/addresses.js');
-const { getActualActiveFertilizer, getActualFertilizedIndex, getActualUnfertilizedIndex, getClaimedSprouts, getRinsableSprouts } = require('../barn/barn-util.js');
+const {
+  BEANSTALK,
+  BEAN,
+  BEANWETH,
+  BEANWSTETH,
+  BEAN3CRV,
+  UNRIPE_BEAN,
+  UNRIPE_LP
+} = require('../../contracts/addresses.js');
+const {
+  getActualActiveFertilizer,
+  getActualFertilizedIndex,
+  getActualUnfertilizedIndex,
+  getClaimedSprouts,
+  getRinsableSprouts
+} = require('../barn/barn-util.js');
 const { tokenEq, l2Token } = require('../token.js');
 const { createAsyncERC20ContractGetter } = require('../../contracts/contract.js');
 const { WHITELISTED, getSumOfUserTotals } = require('../silo/silo-util.js');
@@ -14,7 +28,6 @@ let bs;
 let userSiloTotals;
 
 async function systemStruct(options) {
-
   console.log('Gathering system info...');
 
   BLOCK = options.block;
@@ -86,16 +99,7 @@ async function systemStruct(options) {
   const sop = {};
   const rain = {};
 
-  const [
-    silo,
-    field0,
-    fert,
-    season,
-    weather,
-    seedGauge,
-    migration,
-    evaluationParameters
-  ] = await Promise.all([
+  const [silo, field0, fert, season, weather, seedGauge, migration, evaluationParameters] = await Promise.all([
     siloStruct(),
     fieldStruct(),
     fertilizerStruct(),
@@ -152,7 +156,7 @@ function getMarketMappings() {
   const market = JSON.parse(fs.readFileSync(`results/market${BLOCK}.json`));
   const podListings = {
     0: {}
-  }
+  };
   const podOrders = {};
   for (const listIndex in market.listings.beanstalk3) {
     podListings[0][listIndex] = market.listings.beanstalk3[listIndex];
@@ -193,12 +197,7 @@ async function siloStruct() {
     assetSettings[l2Token(WHITELISTED[i])] = settingsStructs[i];
   }
 
-  const [
-    unripeSettings,
-    whitelistStatuses,
-    germinating,
-    unclaimedGerminating
-  ] = await Promise.all([
+  const [unripeSettings, whitelistStatuses, germinating, unclaimedGerminating] = await Promise.all([
     unripeSettingsStructs(),
     whitelistStatusStructs(),
     germinatingMapping(),
@@ -216,43 +215,32 @@ async function siloStruct() {
     germinating,
     unclaimedGerminating
     // bytes32[8] _buffer
-  }
+  };
 }
 
 async function fieldStruct() {
   console.log('Gathering field info...');
-  const [pods, harvested, harvestable] = await Promise.all([
-    bs.s.f.pods,
-    bs.s.f.harvested,
-    bs.s.f.harvestable
-  ]);
+  const [pods, harvested, harvestable] = await Promise.all([bs.s.f.pods, bs.s.f.harvested, bs.s.f.harvestable]);
   return {
     pods,
     harvested,
     harvestable
     // bytes32[8] _buffer
-  }
+  };
 }
 
 async function fertilizerStruct() {
   console.log('Gathering fertilizer info...');
-  const [
-    activeFertilizer,
-    fertilizedIndex,
-    unfertilizedIndex,
-    fertFirst,
-    fertLast,
-    bpf,
-    recapitalized
-  ] = await Promise.all([
-    getActualActiveFertilizer(bs),
-    getActualFertilizedIndex(bs),
-    getActualUnfertilizedIndex(bs),
-    bs.s.fFirst,
-    bs.s.fLast,
-    bs.s.bpf,
-    bs.s.recapitalized
-  ]);
+  const [activeFertilizer, fertilizedIndex, unfertilizedIndex, fertFirst, fertLast, bpf, recapitalized] =
+    await Promise.all([
+      getActualActiveFertilizer(bs),
+      getActualFertilizedIndex(bs),
+      getActualUnfertilizedIndex(bs),
+      bs.s.fFirst,
+      bs.s.fLast,
+      bs.s.bpf,
+      bs.s.recapitalized
+    ]);
 
   const fertilizer = {};
   const nextFid = {};
@@ -265,7 +253,7 @@ async function fertilizerStruct() {
     }
     current = next;
   }
-  // id 6000000 over recorded 147 units 
+  // id 6000000 over recorded 147 units
   fertilizer[BigInt(6000000)] -= BigInt(147);
 
   return {
@@ -282,7 +270,7 @@ async function fertilizerStruct() {
     // Amount of beans shipped to fert but unpaid due to not being proportional to active fert. previously untracked
     leftoverBeans: 0n
     // bytes32[8] _buffer
-  }
+  };
 }
 
 async function seasonStruct() {
@@ -316,7 +304,7 @@ async function seasonStruct() {
     bs.s.season.stemScaleSeason,
     bs.s.season.start,
     bs.s.season.period,
-    bs.s.season.timestamp,
+    bs.s.season.timestamp
   ]);
   return {
     current,
@@ -334,17 +322,12 @@ async function seasonStruct() {
     period,
     timestamp
     // bytes32[8] _buffer
-  }
+  };
 }
 
 async function weatherStruct() {
   console.log('Gathering weather info...');
-  const [
-    lastDeltaSoil,
-    lastSowTime,
-    thisSowTime,
-    temp
-  ] = await Promise.all([
+  const [lastDeltaSoil, lastSowTime, thisSowTime, temp] = await Promise.all([
     bs.s.w.lastDSoil,
     bs.s.w.lastSowTime,
     bs.s.w.thisSowTime,
@@ -356,15 +339,12 @@ async function weatherStruct() {
     thisSowTime,
     temp
     // bytes32[8] _buffer
-  }
+  };
 }
 
 async function seedGaugeStruct() {
   console.log('Gathering gauge info...');
-  const [
-    averageGrownStalkPerBdvPerSeason,
-    beanToMaxLpGpPerBdvRatio
-  ] = await Promise.all([
+  const [averageGrownStalkPerBdvPerSeason, beanToMaxLpGpPerBdvRatio] = await Promise.all([
     bs.s.seedGauge.averageGrownStalkPerBdvPerSeason,
     bs.s.seedGauge.beanToMaxLpGpPerBdvRatio
   ]);
@@ -372,7 +352,7 @@ async function seedGaugeStruct() {
     averageGrownStalkPerBdvPerSeason: averageGrownStalkPerBdvPerSeason * BigInt(10 ** 6),
     beanToMaxLpGpPerBdvRatio
     // bytes32[8] _buffer
-  }
+  };
 }
 
 async function assetSiloStruct(token) {
@@ -380,18 +360,13 @@ async function assetSiloStruct(token) {
   return {
     deposited: userSiloTotals.tokens[l2Token(token)]?.amount ?? 0n,
     depositedBdv: userSiloTotals.tokens[l2Token(token)]?.bdv ?? 0n
-  }
+  };
 }
 
 async function whitelistStatusStructs() {
   const whitelistStatuses = [];
   for (let i = 0; i < WHITELISTED.length; ++i) {
-    const [
-      token,
-      isWhitelisted,
-      isWhitelistedLp,
-      isWhitelistedWell
-    ] = await Promise.all([
+    const [token, isWhitelisted, isWhitelistedLp, isWhitelistedWell] = await Promise.all([
       bs.s.whitelistStatuses[i].token,
       bs.s.whitelistStatuses[i].isWhitelisted,
       bs.s.whitelistStatuses[i].isWhitelistedLp,
@@ -403,7 +378,7 @@ async function whitelistStatusStructs() {
       isWhitelistedLp,
       isWhitelistedWell,
       isSoppable: tokenEq(token, BEANWETH) // TODO: how to determine which one is soppable?
-    })
+    });
   }
   return whitelistStatuses;
 }
@@ -445,7 +420,7 @@ async function assetSettingsStruct(token) {
     gaugePointImplementation: null,
     liquidityWeightImplementation: null,
     oracleImplementation: null
-  }
+  };
 }
 
 async function unripeSettingsStructs() {
@@ -475,10 +450,7 @@ async function unripeSettingsStructs() {
 }
 
 async function twaReservesStruct(pool) {
-  const [reserve0, reserve1] = await Promise.all([
-    bs.s.twaReserves[pool].reserve0,
-    bs.s.twaReserves[pool].reserve1
-  ]);
+  const [reserve0, reserve1] = await Promise.all([bs.s.twaReserves[pool].reserve0, bs.s.twaReserves[pool].reserve1]);
   return {
     reserve0,
     reserve1
@@ -486,16 +458,20 @@ async function twaReservesStruct(pool) {
 }
 
 async function germinatingMapping() {
-  const oddResults = await Promise.all(WHITELISTED.map(async (token) => ({
-    token: l2Token(token),
-    amount: await getL2TokenAmount(token, await bs.s.oddGerminating.deposited[token].amount, BLOCK),
-    bdv: await bs.s.oddGerminating.deposited[token].bdv,
-  })));
-  const evenResults = await Promise.all(WHITELISTED.map(async (token) => ({
-    token: l2Token(token),
-    amount: await getL2TokenAmount(token, await bs.s.evenGerminating.deposited[token].amount, BLOCK),
-    bdv: await bs.s.evenGerminating.deposited[token].bdv,
-  })));
+  const oddResults = await Promise.all(
+    WHITELISTED.map(async (token) => ({
+      token: l2Token(token),
+      amount: await getL2TokenAmount(token, await bs.s.oddGerminating.deposited[token].amount, BLOCK),
+      bdv: await bs.s.oddGerminating.deposited[token].bdv
+    }))
+  );
+  const evenResults = await Promise.all(
+    WHITELISTED.map(async (token) => ({
+      token: l2Token(token),
+      amount: await getL2TokenAmount(token, await bs.s.evenGerminating.deposited[token].amount, BLOCK),
+      bdv: await bs.s.evenGerminating.deposited[token].bdv
+    }))
+  );
   const reducer = (a, next) => {
     a[next.token] = {
       amount: next.amount,
@@ -505,8 +481,8 @@ async function germinatingMapping() {
   };
   return {
     0: oddResults.reduce(reducer, {}),
-    1: evenResults.reduce(reducer, {}),
-  }
+    1: evenResults.reduce(reducer, {})
+  };
 }
 
 async function unclaimedGerminatingMapping() {
@@ -529,14 +505,14 @@ async function unclaimedGerminatingMapping() {
 async function migrationStruct() {
   // Set this according to total supply minus beanstalk/beaneth/bean3crv/beanwsteth
   const beanToken = await createAsyncERC20ContractGetter(BEAN)();
-  const totalSupply = BigInt(await beanToken.callStatic.totalSupply({blockTag: BLOCK}));
-  const beanstalkBalance = BigInt(await beanToken.callStatic.balanceOf(BEANSTALK, {blockTag: BLOCK}));
-  const beanethBalance = BigInt(await beanToken.callStatic.balanceOf(BEANWETH, {blockTag: BLOCK}));
-  const bean3crvBalance = BigInt(await beanToken.callStatic.balanceOf(BEAN3CRV, {blockTag: BLOCK}));
-  const beanwstethBalance = BigInt(await beanToken.callStatic.balanceOf(BEANWSTETH, {blockTag: BLOCK}));
+  const totalSupply = BigInt(await beanToken.callStatic.totalSupply({ blockTag: BLOCK }));
+  const beanstalkBalance = BigInt(await beanToken.callStatic.balanceOf(BEANSTALK, { blockTag: BLOCK }));
+  const beanethBalance = BigInt(await beanToken.callStatic.balanceOf(BEANWETH, { blockTag: BLOCK }));
+  const bean3crvBalance = BigInt(await beanToken.callStatic.balanceOf(BEAN3CRV, { blockTag: BLOCK }));
+  const beanwstethBalance = BigInt(await beanToken.callStatic.balanceOf(BEANWSTETH, { blockTag: BLOCK }));
 
   return {
-    migratedL1Beans: totalSupply - beanstalkBalance - beanethBalance - bean3crvBalance - beanwstethBalance,
+    migratedL1Beans: totalSupply - beanstalkBalance - beanethBalance - bean3crvBalance - beanwstethBalance
     // bytes32[4] _buffer_
   };
 }
@@ -558,7 +534,7 @@ async function evaluationParametersStruct() {
     soilCoefficientHigh: 500000000000000000n,
     soilCoefficientLow: 1500000000000000000n,
     baseReward: 5000000n
-  }
+  };
 }
 
 function shipmentRoutesList() {
@@ -585,18 +561,18 @@ function shipmentRoutesList() {
 }
 
 const GerminationSideEnum = {
-  'ODD': 0,
-  'EVEN': 1,
-  'NOT_GERMINATING': 2
-}
+  ODD: 0,
+  EVEN: 1,
+  NOT_GERMINATING: 2
+};
 
 const ShipmentRecipientEnum = {
-  'NULL': 0,
-  'SILO': 1,
-  'FIELD': 2,
-  'BARN': 3
+  NULL: 0,
+  SILO: 1,
+  FIELD: 2,
+  BARN: 3
 };
 
 module.exports = {
   systemStruct
-}
+};

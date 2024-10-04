@@ -1,13 +1,13 @@
 const fs = require('fs');
 const { ethers } = require('ethers');
-const { BEANWETH, BEANWSTETH, BEAN3CRV } = require("../contracts/addresses");
-const { getContractAsync } = require("../contracts/contract");
-const { arbProviderThenable, providerThenable } = require("../contracts/provider");
+const { BEANWETH, BEANWSTETH, BEAN3CRV } = require('../contracts/addresses');
+const { getContractAsync } = require('../contracts/contract');
+const { arbProviderThenable, providerThenable } = require('../contracts/provider');
 const wellAbi = require('../contracts/abi/well.json');
 const wellFnAbi = require('../contracts/abi/well-function.json');
 
-const CP2_FN = "0xBA5104f2df98974A83CD10d16E24282ce6Bb647f";
-const STABLE2_FN = "0xBA51055Ac3068Ffd884B495BF58314493cde9653";
+const CP2_FN = '0xBA5104f2df98974A83CD10d16E24282ce6Bb647f';
+const STABLE2_FN = '0xBA51055Ac3068Ffd884B495BF58314493cde9653';
 
 async function getRemoveLiquidityOut(wellAddress, lpAmountIn, BLOCK) {
   const well = await getContractAsync(wellAddress, wellAbi, { provider: providerThenable });
@@ -25,19 +25,13 @@ async function calcL2LpTokenSupply(lpTokenAddressL1, BLOCK_L1) {
     const beanUsdcReserves = BigInt(fs.readFileSync(`inputs/bean-usdc-reserves.txt`).split(','));
     const abiCoder = new ethers.AbiCoder();
     return await wellFunction.callStatic.calcLpTokenSupply(
-      [
-        beanUsdcReserves[0],
-        beanUsdcReserves[1]
-      ],
-      abiCoder.encode(
-        ["uint8", "uint8"],
-        [6, 6]
-      )
-    )
+      [beanUsdcReserves[0], beanUsdcReserves[1]],
+      abiCoder.encode(['uint8', 'uint8'], [6, 6])
+    );
   } else {
     const wellFunction = await getContractAsync(CP2_FN, wellFnAbi, { provider: arbProviderThenable });
     const reserves = Object.values(circulatingBalances.pools[LP_NAME_MAPPING[lpTokenAddressL1]]);
-    return await wellFunction.callStatic.calcLpTokenSupply(reserves, "0x00")
+    return await wellFunction.callStatic.calcLpTokenSupply(reserves, '0x00');
   }
 }
 

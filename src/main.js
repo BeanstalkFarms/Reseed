@@ -1,20 +1,19 @@
-const { exportFert } = require("./barn");
-const { exportMigratedTokens } = require("./migrated-tokens");
-const { exportContracts } = require("./contract-addresses");
-const { exportPlots } = require("./field");
-const { exportInternalBalances } = require("./internal-balance");
-const { exportMarket } = require("./market");
-const { exportDeposits } = require("./silo");
-const { exportStorage } = require("./storage");
-const { runVerification } = require("./verify");
+const { exportFert } = require('./barn');
+const { exportMigratedTokens } = require('./migrated-tokens');
+const { exportContracts } = require('./contract-addresses');
+const { exportPlots } = require('./field');
+const { exportInternalBalances } = require('./internal-balance');
+const { exportMarket } = require('./market');
+const { exportDeposits } = require('./silo');
+const { exportStorage } = require('./storage');
+const { runVerification } = require('./verify');
 
 // Main entrypoint for all scripts
 (async () => {
-
   const args = process.argv.slice(2);
-  
+
   if (args.length != 2) {
-    throw new Error("Required args not provided. Please provide a block number")
+    throw new Error('Required args not provided. Please provide a block number');
   }
 
   const block = parseInt(args[1]);
@@ -59,5 +58,4 @@ const { runVerification } = require("./verify");
       await runVerification(block);
       break;
   }
-
-})()
+})();

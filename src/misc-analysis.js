@@ -13,11 +13,11 @@ const { l2Token } = require('./utils/token.js');
 function stalkAnalysis(block) {
   const deposits = JSON.parse(fs.readFileSync(`results/deposits${block}.json`));
   let sumUnripeStalk = 0n;
-  let sumUnripeBaseStalk = 0n
+  let sumUnripeBaseStalk = 0n;
   let sumAllStalk = 0n;
   for (const account in deposits.accounts) {
     for (const token in deposits.accounts[account]) {
-      if (token != "totals") {
+      if (token != 'totals') {
         for (const stem in deposits.accounts[account][token]) {
           const stalk = BigInt(deposits.accounts[account][token][stem].stalk);
           if ([UNRIPE_BEAN, UNRIPE_LP].includes(token)) {
@@ -65,58 +65,61 @@ function replantMerkleAnalysis() {
 // Binary search on the silo script's output for when a given property plus an offset crosses in sign.
 // `lowerIsNegative` indicates whether the initial lower block number corresponds to a negative numerical result.
 async function searchSiloDiscrepancy(targetProperty, valueOffset, lower, upper, lowerIsNegative) {
-  
   let remainingIterations = Math.ceil(Math.log2(upper - lower + 1));
   console.log('Remaining iterations:', remainingIterations);
-  const result = await binarySearch(lower, upper, async (block) => {
-    console.log('Processing block', block);
-    const siloResult = await exportDeposits(block);
-    const isPositive = siloResult[targetProperty] + valueOffset > 0n;
-    if (!isPositive) {
-      if (lowerIsNegative) {
-        return 1;
+  const result = await binarySearch(
+    lower,
+    upper,
+    async (block) => {
+      console.log('Processing block', block);
+      const siloResult = await exportDeposits(block);
+      const isPositive = siloResult[targetProperty] + valueOffset > 0n;
+      if (!isPositive) {
+        if (lowerIsNegative) {
+          return 1;
+        } else {
+          return -1;
+        }
       } else {
-        return -1
+        if (lowerIsNegative) {
+          return -1;
+        } else {
+          return 1;
+        }
       }
-    } else {
-      if (lowerIsNegative) {
-        return -1;
-      } else {
-        return 1;
-      }
+    },
+    (usedMiddle) => {
+      console.log('Remaining iterations:', --remainingIterations);
     }
-  }, (usedMiddle) => {
-    console.log('Remaining iterations:', --remainingIterations);
-  });
+  );
   console.log('found at ', result);
 }
 
 async function allEarnedBeans(block) {
-
   const beanstalk = await asyncBeanstalkContractGetter();
 
-  console.log('Getting accounts to check earned beans for...')
+  console.log('Getting accounts to check earned beans for...');
   const duneResult = await getDuneResult(4050145, block);
   const promiseGenerators = [];
-  const results = []
+  const results = [];
   for (const row of duneResult.result.rows) {
-    promiseGenerators.push(async () => 
+    promiseGenerators.push(async () =>
       results.push({
         account: row.account,
-        earnedBeans: BigInt(await retryable(async () => 
-          beanstalk.callStatic.balanceOfEarnedBeans(row.account, { blockTag: block })
-        ))
-      }) 
+        earnedBeans: BigInt(
+          await retryable(async () => beanstalk.callStatic.balanceOfEarnedBeans(row.account, { blockTag: block }))
+        )
+      })
     );
   }
   console.log(`Processing ${promiseGenerators.length} accounts...`);
   await runBatchPromises(promiseGenerators, 100);
 
-  results.sort((a, b) => a.account > b.account ? -1 : 1);
+  results.sort((a, b) => (a.account > b.account ? -1 : 1));
   await fs.promises.writeFile(`results/earnedBeans${block}.json`, JSON.stringify(results, bigintDecimal, 2));
 
   const sum = results.reduce((a, next) => a + next.earnedBeans, 0n);
-  console.log(`Sum of all: ${sum}`);;
+  console.log(`Sum of all: ${sum}`);
 }
 
 function contractAccountSums(block) {
@@ -161,7 +164,7 @@ function contractAccountSums(block) {
       pods: 0n
     },
     barn: {
-      fert: 0n,
+      fert: 0n
     },
     farm: {
       tokens: {
@@ -185,7 +188,7 @@ function contractAccountSums(block) {
         }
       }
     }
-  }
+  };
   for (const account of contractAccounts) {
     const storage = accountStorage[account];
     if (!storage) {

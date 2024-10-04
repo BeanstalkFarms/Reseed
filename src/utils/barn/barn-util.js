@@ -3,15 +3,15 @@ const fs = require('fs');
 /// Corrects the discrepancies introduced at the replant described here
 /// https://www.notion.so/beanstalk-farms/Discrepancy-Active-Fert-Sprouts-in-Contract-f8fccb34664c46299adb8be93a062ab7
 async function getActualActiveFertilizer(bs) {
-  return await bs.s.activeFertilizer - BigInt(147);
+  return (await bs.s.activeFertilizer) - BigInt(147);
 }
 
 async function getActualFertilizedIndex(bs) {
-  return await bs.s.fertilizedIndex - BigInt(147) * await bs.s.bpf;
+  return (await bs.s.fertilizedIndex) - BigInt(147) * (await bs.s.bpf);
 }
 
 async function getActualUnfertilizedIndex(bs) {
-  return await bs.s.unfertilizedIndex - BigInt(882 * 10 ** 6);
+  return (await bs.s.unfertilizedIndex) - BigInt(882 * 10 ** 6);
 }
 ///
 
@@ -31,4 +31,4 @@ module.exports = {
   getActualUnfertilizedIndex,
   getRinsableSprouts,
   getClaimedSprouts
-}
+};

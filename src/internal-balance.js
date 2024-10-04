@@ -3,7 +3,13 @@ const { BEANSTALK } = require('./contracts/addresses.js');
 const { providerThenable } = require('./contracts/provider');
 const storageLayout = require('./contracts/abi/storageLayout.json');
 const ContractStorage = require('@beanstalk/contract-storage');
-const { getWithdrawals, getCurrentInternalBalances, getUnpickedUnripe, getL2TokenAmount, getRinsableUserSprouts } = require('./utils/balances/balances-util.js');
+const {
+  getWithdrawals,
+  getCurrentInternalBalances,
+  getUnpickedUnripe,
+  getL2TokenAmount,
+  getRinsableUserSprouts
+} = require('./utils/balances/balances-util.js');
 const { WHITELISTED } = require('./utils/silo/silo-util.js');
 const { bigintHex } = require('./utils/json-formatter.js');
 
@@ -13,7 +19,6 @@ let BLOCK;
 let bs;
 
 async function exportInternalBalances(block) {
-
   BLOCK = block;
   bs = new ContractStorage(await providerThenable, BEANSTALK, storageLayout, BLOCK);
 
@@ -27,13 +32,13 @@ async function exportInternalBalances(block) {
   console.log('Getting user internal balances...');
   const currentInternalBalances = await getCurrentInternalBalances(bs, BLOCK, BATCH_SIZE);
   const balancesByToken = Object.values(currentInternalBalances).reduce(reducer, {});
-  
+
   console.log('Getting user unclaimed withdrawals...');
   const withdrawals = await getWithdrawals(bs, BLOCK, BATCH_SIZE);
   const withdrawalsByToken = Object.values(withdrawals).reduce(reducer, {});
 
   for (const token in withdrawalsByToken) {
-    if (withdrawalsByToken[token] !== await bs.s.siloBalances[token].withdrawn) {
+    if (withdrawalsByToken[token] !== (await bs.s.siloBalances[token].withdrawn)) {
       console.log('[WARNING]: Mismatch between summation of user withdrawals and system-level withdrawals');
     }
   }
@@ -47,13 +52,15 @@ async function exportInternalBalances(block) {
   const rinsableByToken = Object.values(rinsableSprouts).reduce(reducer, {});
 
   // Add withdrawals/unpicked into internal balances
-  const allAccounts = [...new Set([
-    ...Object.keys(currentInternalBalances),
-    ...Object.keys(withdrawals),
-    ...Object.keys(unpicked),
-    ...Object.keys(rinsableSprouts)
-  ])];
-  const breakdown = { 
+  const allAccounts = [
+    ...new Set([
+      ...Object.keys(currentInternalBalances),
+      ...Object.keys(withdrawals),
+      ...Object.keys(unpicked),
+      ...Object.keys(rinsableSprouts)
+    ])
+  ];
+  const breakdown = {
     accounts: {},
     totals: {}
   };
@@ -90,7 +97,7 @@ async function exportInternalBalances(block) {
       unpicked: unpickedByToken[token] ?? 0n,
       rinsable: rinsableByToken[token] ?? 0n,
       total: sum
-    }
+    };
   }
 
   const balancesOutFile = `results/internal-balances${BLOCK}.json`;
@@ -101,4 +108,4 @@ async function exportInternalBalances(block) {
 
 module.exports = {
   exportInternalBalances
-}
+};

@@ -35,7 +35,7 @@ async function allPaginatedSG(subgraphClient, query, block, where, paginateField
     const result = await subgraphClient(paginatedQuery);
 
     if (!result[entityName][0].id) {
-      throw new Error("field `id` was not present on the returned entity");
+      throw new Error('field `id` was not present on the returned entity');
     }
 
     // Record the results and repeat as necessary. Filter any repeated results on overlapping pages.

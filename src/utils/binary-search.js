@@ -1,9 +1,8 @@
 async function binarySearch(low, high, searchFn, loopCallback) {
-
   let middle;
-  const iterate = () => middle = Math.floor((low + high) / 2);
+  const iterate = () => (middle = Math.floor((low + high) / 2));
   iterate();
-  
+
   while (middle < high && middle > low) {
     const searchResult = await searchFn(middle, low, high);
     loopCallback?.(middle, searchResult);

@@ -7,7 +7,15 @@ const { asyncBeanstalkContractGetter } = require('./contracts/contract.js');
 const retryable = require('./utils/retryable.js');
 const storageLayout = require('./contracts/abi/storageLayout.json');
 const ContractStorage = require('@beanstalk/contract-storage');
-const { getBeanEthUnripeLP, getBean3CrvUnripeLP, getBeanLusdUnripeLP, seasonToStem, getLegacySeedsPerToken, packAddressAndStem, WHITELISTED_LP } = require('./utils/silo/silo-util.js');
+const {
+  getBeanEthUnripeLP,
+  getBean3CrvUnripeLP,
+  getBeanLusdUnripeLP,
+  seasonToStem,
+  getLegacySeedsPerToken,
+  packAddressAndStem,
+  WHITELISTED_LP
+} = require('./utils/silo/silo-util.js');
 const { getDuneResult } = require('./contracts/dune');
 
 // Exploit migration
@@ -66,7 +74,14 @@ async function preProcessInit(deposits, rows) {
 
 // Silo v3 migrated stems
 async function processRow(deposits, row) {
-  let [account, token, stem, season, amount, bdv] = [row.account, row.token, row.stem ?? '', row.season ?? '', row.amount_balance, row.bdv_balance];
+  let [account, token, stem, season, amount, bdv] = [
+    row.account,
+    row.token,
+    row.stem ?? '',
+    row.season ?? '',
+    row.amount_balance,
+    row.bdv_balance
+  ];
   if (DEBUG_ACCOUNT && account !== DEBUG_ACCOUNT) {
     return;
   }
@@ -84,17 +99,15 @@ async function processRow(deposits, row) {
       }
     } catch (e) {
       // stemTipForToken did not exist
-      stemTips[token] = seasonToStem(Number(await bs.s.season.current), stemStartSeason, getLegacySeedsPerToken(token))
+      stemTips[token] = seasonToStem(Number(await bs.s.season.current), stemStartSeason, getLegacySeedsPerToken(token));
     }
   }
 
   if (stem !== '') {
-
     // Silo v3 migrated stems. Transform to v3.1 if needed
     const { actualStem, isMigrated3_1 } = await transformStem(account, token, BigInt(stem));
     stem = actualStem;
     version = isMigrated3_1 ? 'v3.1' : 'v3';
-
   } else {
     // Deposits by season. The RemoveDeposit(s) events are missing bdv from
     // the event data, so the information must be retrieved from storage directly. The provided entries are
@@ -108,15 +121,15 @@ async function processRow(deposits, row) {
         // LibUnripeSilo.unripeBeanDeposit
         const legacyAmount = await bs.s.a[account].bean.deposits[season];
         amount = amount + legacyAmount;
-        bdv = bdv + legacyAmount * INITIAL_RECAP / BigInt(10 ** 18)
+        bdv = bdv + (legacyAmount * INITIAL_RECAP) / BigInt(10 ** 18);
       } else if (tokenEq(token, UNRIPE_LP)) {
         // LibUnripeSilo.unripeLPDeposit
         const { amount: ethAmount, bdv: ethBdv } = await getBeanEthUnripeLP(account, season, bs);
         const { amount: crvAmount, bdv: crvBdv } = await getBean3CrvUnripeLP(account, season, bs);
         const { amount: lusdAmount, bdv: lusdBdv } = await getBeanLusdUnripeLP(account, season, bs);
-        
+
         amount = amount + ethAmount + crvAmount + lusdAmount;
-        const legBdv = (ethBdv + crvBdv + lusdBdv) * INITIAL_RECAP / BigInt(10 ** 18);
+        const legBdv = ((ethBdv + crvBdv + lusdBdv) * INITIAL_RECAP) / BigInt(10 ** 18);
         bdv = bdv + legBdv;
       }
     }
@@ -168,16 +181,16 @@ function scaleStem(stem) {
 // Transforms the stem according to silo v3.1 if appropriate. Checks for legacy deposit
 async function transformStem(account, token, stem) {
   const depositId = packAddressAndStem(token, stem);
-  if (await bs.s.a[account].legacyV3Deposits[depositId].amount > 0n) {
+  if ((await bs.s.a[account].legacyV3Deposits[depositId].amount) > 0n) {
     return {
       actualStem: scaleStem(stem),
       isMigrated3_1: false
-    }
+    };
   }
   return {
     actualStem: stem,
     isMigrated3_1: true
-  }
+  };
 }
 
 async function checkWallets(deposits) {
@@ -201,7 +214,7 @@ async function checkWallets(deposits) {
 
   for (let i = 0; i < depositors.length; i += BATCH_SIZE) {
     const batch = depositors.slice(i, Math.min(i + BATCH_SIZE, depositors.length));
-    await Promise.all(batch.map(depositor => checkWallet(results, deposits, depositor)));
+    await Promise.all(batch.map((depositor) => checkWallet(results, deposits, depositor)));
   }
 
   // Format the result with raw hex values and decimal values
@@ -215,7 +228,7 @@ async function checkWallets(deposits) {
   };
 
   return Object.entries(results).reduce((result, [k, v]) => {
-    result[k] =  {
+    result[k] = {
       raw: v,
       formatted: Object.entries(v).reduce(reducer, {})
     };
@@ -226,14 +239,13 @@ async function checkWallets(deposits) {
 // Deposits is mutated to add the computed value for expected stalk, mowable stalk, germination info,
 // and plants any earned beans
 async function checkWallet(results, deposits, depositor) {
-
   accountUpdates[depositor] = await bs.s.a[depositor].lastUpdate;
   results[depositor] = { breakdown: {} };
 
   // Plant at the current stem if there are any earned beans
-  const earnedBeans = BigInt(await retryable(async () => 
-    beanstalk.callStatic.balanceOfEarnedBeans(depositor, { blockTag: BLOCK })
-  ));
+  const earnedBeans = BigInt(
+    await retryable(async () => beanstalk.callStatic.balanceOfEarnedBeans(depositor, { blockTag: BLOCK }))
+  );
   if (earnedBeans !== BigInt(0)) {
     if (!deposits[depositor][BEAN]) {
       deposits[depositor][BEAN] = {};
@@ -268,10 +280,10 @@ async function checkWallet(results, deposits, depositor) {
     let mowStem = await bs.s.a[depositor].mowStatuses[token].lastStem;
     if (
       // If stemScaleSeason is unset, then that upgrade hasnt happened yet and thus the user hasnt migrated
-      stemScaleSeason == 0
-      || (accountUpdates[depositor] < stemScaleSeason && accountUpdates[depositor] > 0)
+      stemScaleSeason == 0 ||
+      (accountUpdates[depositor] < stemScaleSeason && accountUpdates[depositor] > 0) ||
       // Edge case for when user update and stem scale occurred at the same season
-      || (accountUpdates[depositor] == stemScaleSeason && mowStem > 0 && stemTips[token] / mowStem >= BigInt(10 ** 6))
+      (accountUpdates[depositor] == stemScaleSeason && mowStem > 0 && stemTips[token] / mowStem >= BigInt(10 ** 6))
     ) {
       mowStem = scaleStem(mowStem);
     }
@@ -288,7 +300,7 @@ async function checkWallet(results, deposits, depositor) {
         const stemDeltas = [mowStem - BigInt(stem), stemTips[token] - BigInt(stem)];
         // Deposit stalk = grown + base stalk
         // stems have 6 precision, though 10 is needed to grow one stalk. 10 + 6 => 16 precision for stalk
-        const stalk = stemDeltas.map(delta => (delta + 10000000000n) * deposits[depositor][token][stem].bdv);
+        const stalk = stemDeltas.map((delta) => (delta + 10000000000n) * deposits[depositor][token][stem].bdv);
         deposits[depositor][token][stem].stalk = stalk[0];
         deposits[depositor][token][stem].stalkIfMown = stalk[1];
       }
@@ -306,7 +318,7 @@ async function checkWallet(results, deposits, depositor) {
   results[depositor].contractStalk = contractStalk.sum;
   results[depositor].discrepancy = results[depositor].depositStalk - results[depositor].contractStalk;
 
-  if (Object.values(deposits[depositor].totals).some(v => v.seeds > 0n)) {
+  if (Object.values(deposits[depositor].totals).some((v) => v.seeds > 0n)) {
     results[depositor].depositSeeds = Object.values(deposits[depositor].totals).reduce(
       (ans, next) => ans + next.seeds,
       0n
@@ -333,9 +345,7 @@ async function checkWallet(results, deposits, depositor) {
 async function getContractStalk(account) {
   const [storage, earned, germinating, doneGerminating] = await Promise.all([
     bs.s.a[account].s.stalk,
-    retryable(async () => 
-      BigInt(await beanstalk.callStatic.balanceOfEarnedStalk(account, { blockTag: BLOCK }))
-    ),
+    retryable(async () => BigInt(await beanstalk.callStatic.balanceOfEarnedStalk(account, { blockTag: BLOCK }))),
     retryable(async () => {
       try {
         return BigInt(await beanstalk.callStatic.balanceOfGerminatingStalk(account, { blockTag: BLOCK }));
@@ -346,7 +356,9 @@ async function getContractStalk(account) {
     }),
     retryable(async () => {
       try {
-        return BigInt((await beanstalk.callStatic.balanceOfFinishedGerminatingStalkAndRoots(account, { blockTag: BLOCK }))[0]);
+        return BigInt(
+          (await beanstalk.callStatic.balanceOfFinishedGerminatingStalkAndRoots(account, { blockTag: BLOCK }))[0]
+        );
       } catch (e) {
         // Germination may not be implemented yet
         return 0n;
@@ -360,16 +372,18 @@ async function getContractStalk(account) {
     germinating: germinating * BigInt(10 ** 6),
     doneGerminating: doneGerminating * BigInt(10 ** 6),
     sum: (storage + earned + germinating + doneGerminating) * BigInt(10 ** 6)
-  }
+  };
 }
 
 async function getSystemGerminating() {
-  const both = await Promise.all(['oddGerminating', 'evenGerminating'].map(async field => {
-    const germinating = await Promise.all([BEAN, BEANWETH, BEANWSTETH, UNRIPE_BEAN, UNRIPE_LP].map(token =>
-      bs.s[field].deposited[token].bdv
-    ));
-    return germinating.reduce((a, next) => a + next * BigInt(10 ** 10), 0n); // bdv is 6, +10 to get to 16
-  }));
+  const both = await Promise.all(
+    ['oddGerminating', 'evenGerminating'].map(async (field) => {
+      const germinating = await Promise.all(
+        [BEAN, BEANWETH, BEANWSTETH, UNRIPE_BEAN, UNRIPE_LP].map((token) => bs.s[field].deposited[token].bdv)
+      );
+      return germinating.reduce((a, next) => a + next * BigInt(10 ** 10), 0n); // bdv is 6, +10 to get to 16
+    })
+  );
   return both.reduce((a, next) => a + next, 0n);
 }
 
@@ -399,13 +413,13 @@ async function exportDeposits(block) {
     rowsBuffer.push(row);
     if (rowsBuffer.length >= BATCH_SIZE) {
       await preProcessInit(deposits, rowsBuffer);
-      await Promise.all(rowsBuffer.map(row => processRow(deposits, row)));
+      await Promise.all(rowsBuffer.map((row) => processRow(deposits, row)));
       rowsBuffer = [];
     }
   }
   if (rowsBuffer.length > 0) {
     await preProcessInit(deposits, rowsBuffer);
-    await Promise.all(rowsBuffer.map(row => processRow(deposits, row)));
+    await Promise.all(rowsBuffer.map((row) => processRow(deposits, row)));
   }
 
   console.log(`\rFinished processing ${parseProgress} entries`);
@@ -416,28 +430,31 @@ async function exportDeposits(block) {
   // Add global totals to deposits object before writing to out file
   const depositsOutput = {
     accounts: deposits,
-    totals: Object.keys(deposits).reduce((a, next) => {
-      const depositorTotals = deposits[next].totals;
-      a.stalkMinusGerminating += depositorTotals.stalkMinusGerminating;
-      a.stalkInclGerminating += depositorTotals.stalkInclGerminating;
-      a.stalkIfMownMinusGerminating += depositorTotals.stalkIfMownMinusGerminating;
-      a.stalkIfMownInclGerminating += depositorTotals.stalkIfMownInclGerminating;
-      for (const token of Object.keys(depositorTotals).filter(k => k.startsWith('0x'))) {
-        if (!a.tokens[token]) {
-          a.tokens[token] = { amount: 0n, bdv: 0n };
+    totals: Object.keys(deposits).reduce(
+      (a, next) => {
+        const depositorTotals = deposits[next].totals;
+        a.stalkMinusGerminating += depositorTotals.stalkMinusGerminating;
+        a.stalkInclGerminating += depositorTotals.stalkInclGerminating;
+        a.stalkIfMownMinusGerminating += depositorTotals.stalkIfMownMinusGerminating;
+        a.stalkIfMownInclGerminating += depositorTotals.stalkIfMownInclGerminating;
+        for (const token of Object.keys(depositorTotals).filter((k) => k.startsWith('0x'))) {
+          if (!a.tokens[token]) {
+            a.tokens[token] = { amount: 0n, bdv: 0n };
+          }
+          a.tokens[token].amount += depositorTotals[token].amount;
+          a.tokens[token].bdv += depositorTotals[token].bdv;
         }
-        a.tokens[token].amount += depositorTotals[token].amount;
-        a.tokens[token].bdv += depositorTotals[token].bdv;
+        return a;
+      },
+      {
+        stalkMinusGerminating: 0n,
+        stalkInclGerminating: 0n,
+        stalkIfMownMinusGerminating: 0n,
+        stalkIfMownInclGerminating: 0n,
+        stemTips,
+        tokens: {}
       }
-      return a;
-    }, {
-      stalkMinusGerminating: 0n,
-      stalkInclGerminating: 0n,
-      stalkIfMownMinusGerminating: 0n,
-      stalkIfMownInclGerminating: 0n,
-      stemTips,
-      tokens: {}
-    })
+    )
   };
 
   const outFile = `results/deposits${BLOCK}.json`;
@@ -445,11 +462,13 @@ async function exportDeposits(block) {
   console.log(`\rWrote results to ${outFile}`);
 
   const discrepancyFile = `results/deposit-discrepancies${BLOCK}.json`;
-  const formatted = Object.entries(results).filter(([k, v]) =>
-    results[k].raw.discrepancy !== 0n
-  ).sort(([_, a], [_1, b]) =>
-    Math.abs(parseFloat(b.formatted.discrepancy.replace(/,/g, ''))) - Math.abs(parseFloat(a.formatted.discrepancy.replace(/,/g, '')))
-  );
+  const formatted = Object.entries(results)
+    .filter(([k, v]) => results[k].raw.discrepancy !== 0n)
+    .sort(
+      ([_, a], [_1, b]) =>
+        Math.abs(parseFloat(b.formatted.discrepancy.replace(/,/g, ''))) -
+        Math.abs(parseFloat(a.formatted.discrepancy.replace(/,/g, '')))
+    );
   await fs.promises.writeFile(discrepancyFile, JSON.stringify(formatted, bigintHex, 2));
   console.log(`Wrote discrepancy summary to ${discrepancyFile}`);
 
@@ -460,13 +479,13 @@ async function exportDeposits(block) {
   const storageStalk = (await bs.s.s.stalk) * BigInt(10 ** 6) + storageGerminating;
   const storageEarnedBeans = await bs.s.earnedBeans;
   console.log(`Expected sum (s.s.stalk + s.odd/evenGerminating):         ${storageStalk}`);
-  console.log(`Difference?                                               ${storageStalk - netSystemStalk}`)
+  console.log(`Difference?                                               ${storageStalk - netSystemStalk}`);
   console.log(`System germinating:                                       ${storageGerminating}`);
   console.log(`System stalk after all is planted/mown:                   ${netSystemMownStalk}`);
   console.log(`System earned beans:                                      ${storageEarnedBeans}`);
   console.log(`Sum of planted user earned beans:                         ${sumUserEarnedBeans}`);
   console.log(`Difference?                                               ${storageEarnedBeans - sumUserEarnedBeans}`);
-  
+
   return {
     netSystemStalk,
     storageStalk,

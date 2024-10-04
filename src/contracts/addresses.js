@@ -26,18 +26,12 @@ const contracts = {
   MULTI_FLOW_PUMP: '0xBA510f10E3095B83a0F33aa9ad2544E22570a87C'
 };
 
-const addressesOnly = Object.fromEntries(
-  Object.entries(contracts).map(
-    ([k, v]) => [k, Array.isArray(v) ? v[0] : v]
-  )
-);
+const addressesOnly = Object.fromEntries(Object.entries(contracts).map(([k, v]) => [k, Array.isArray(v) ? v[0] : v]));
 
 const tokenDecimals = Object.fromEntries(
-  Object.entries(contracts).filter(
-    ([k, v]) => Array.isArray(v)
-  ).map(
-    ([k, v]) => [v[0], v[1]]
-  )
+  Object.entries(contracts)
+    .filter(([k, v]) => Array.isArray(v))
+    .map(([k, v]) => [v[0], v[1]])
 );
 
 module.exports = {

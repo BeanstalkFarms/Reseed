@@ -7,4 +7,4 @@ function getHarvestablePods(block) {
 
 module.exports = {
   getHarvestablePods
-}
+};

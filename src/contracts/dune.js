@@ -1,5 +1,5 @@
-const { QueryParameter, DuneClient } = require("@duneanalytics/client-sdk");
-const { providerThenable } = require("./provider");
+const { QueryParameter, DuneClient } = require('@duneanalytics/client-sdk');
+const { providerThenable } = require('./provider');
 
 async function getDuneResult(queryId, block) {
   const client = new DuneClient(process.env.DUNE_API_KEY);
@@ -14,13 +14,9 @@ async function makeParameters(queryId, block) {
   if (queryId === 3798359) {
     const provider = await providerThenable;
     const blockData = await provider.getBlock(block);
-    return [
-      QueryParameter.date("snapshot", formatDate(new Date(blockData.timestamp * 1000)))
-    ];
+    return [QueryParameter.date('snapshot', formatDate(new Date(blockData.timestamp * 1000)))];
   } else {
-    return [
-      QueryParameter.number("block", block)
-    ];
+    return [QueryParameter.number('block', block)];
   }
 }
 

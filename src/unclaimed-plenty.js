@@ -22,7 +22,7 @@ let unclaimedEth = {
 };
 
 async function checkAccountPlenty(account) {
-  const eth = await retryable(async () => 
+  const eth = await retryable(async () =>
     BigInt(await beanstalk.callStatic.balanceOfEth(account, { blockTag: EXPLOIT_BLOCK }))
   );
   if (eth > 0n) {
@@ -33,13 +33,12 @@ async function checkAccountPlenty(account) {
 }
 
 async function identifyUnclaimedPlenty() {
-
   beanstalk = await getContractAsync(BEANSTALK, beanstalkInitAbi, { provider: providerThenable });
   bs = new ContractStorage(await providerThenable, BEANSTALK, storageLayout, EXPLOIT_BLOCK);
 
   const total = preReplantSiloAccounts.length;
   console.log('Checking pre-exploit accounts for unclaimed plenty...');
-  process.stdout.write(`\r0${' '.repeat((total).toString().length - 1)} / ${total}`);
+  process.stdout.write(`\r0${' '.repeat(total.toString().length - 1)} / ${total}`);
 
   const promiseGenerators = preReplantSiloAccounts.map((account) => () => checkAccountPlenty(account));
   await runBatchPromises(promiseGenerators, 100);

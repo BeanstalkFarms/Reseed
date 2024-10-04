@@ -28,13 +28,12 @@ const marketStorage = {
 const updatedMarketInfo = {
   listings: {},
   orders: {}
-}
+};
 
 let checkProgress = 0;
 
 // Gets all market items from the subgraph, or a local cache if this was previously retrieved for the same block.
 async function getAllMarket() {
-  
   let allMarket;
   const marketCache = `inputs/cached-market${BLOCK}.json`;
   if (fs.existsSync(marketCache)) {
@@ -57,7 +56,6 @@ async function getAllMarket() {
 // For orders: retrieving just the id is sufficient.
 // From the above we can get the id/amount of beans still in the order.
 async function getMarketFromSubgraph() {
-
   const listings = await allPaginatedSG(
     beanstalkSG,
     `
@@ -165,10 +163,22 @@ async function checkOrder(order) {
 
 // Same as Listing.sol::_hashListing()
 function hashListing(listing) {
-  return ethers.keccak256(ethers.solidityPacked(
-    ['address', 'uint256', 'uint256', 'uint256', 'uint256', 'uint24', 'uint256', 'uint256', 'uint8'],
-    [listing.farmer.id, 0, listing.index, listing.start, listing.amount, listing.pricePerPod, listing.maxHarvestableIndex, listing.minFillAmount, listing.mode]
-  ));
+  return ethers.keccak256(
+    ethers.solidityPacked(
+      ['address', 'uint256', 'uint256', 'uint256', 'uint256', 'uint24', 'uint256', 'uint256', 'uint8'],
+      [
+        listing.farmer.id,
+        0,
+        listing.index,
+        listing.start,
+        listing.amount,
+        listing.pricePerPod,
+        listing.maxHarvestableIndex,
+        listing.minFillAmount,
+        listing.mode
+      ]
+    )
+  );
 
   // Pre-migration format. Not needed but kept here for reference.
   // if (listing.minFillAmount > 0) {
@@ -186,10 +196,12 @@ function hashListing(listing) {
 
 // Same as Order.sol::_getOrderId()
 function hashOrder(order) {
-  return ethers.keccak256(ethers.solidityPacked(
-    ['address', 'uint256', 'uint24', 'uint256', 'uint256'],
-    [order.farmer.id, 0, order.pricePerPod, order.maxPlaceInLine, order.minFillAmount]
-  ));
+  return ethers.keccak256(
+    ethers.solidityPacked(
+      ['address', 'uint256', 'uint24', 'uint256', 'uint256'],
+      [order.farmer.id, 0, order.pricePerPod, order.maxPlaceInLine, order.minFillAmount]
+    )
+  );
 
   // Pre-migration format. Not needed but kept here for reference.
   // if (order.minFillAmount > 0) {
@@ -208,7 +220,6 @@ function hashOrder(order) {
 // NOTE: it is not possible to verify with certainty that ALL pod listings/orders are encapsulated here.
 // However, the impact of missing one of these is highly negligible
 async function exportMarket(block) {
-
   BLOCK = block;
   bs = new ContractStorage(await providerThenable, BEANSTALK, storageLayout, BLOCK);
 
@@ -218,10 +229,10 @@ async function exportMarket(block) {
   const allPromiseGenerators = [
     ...allMarket.listings.map((listing) => () => checkListing(listing)),
     ...allMarket.orders.map((order) => () => checkOrder(order))
-  ]
+  ];
 
   const total = allMarket.listings.length + allMarket.orders.length;
-  process.stdout.write(`\r0${' '.repeat((total).toString().length - 1)} / ${total}`);
+  process.stdout.write(`\r0${' '.repeat(total.toString().length - 1)} / ${total}`);
   await runBatchPromises(allPromiseGenerators, BATCH_SIZE);
 
   console.log(`\rChecked ${checkProgress} listings/orders`);
@@ -233,7 +244,6 @@ async function exportMarket(block) {
   const infoOutFile = `results/market-info${BLOCK}.json`;
   await fs.promises.writeFile(infoOutFile, JSON.stringify(updatedMarketInfo, bigintHex, 2));
   console.log(`Additional market information exported to ${infoOutFile}`);
-
 }
 
 module.exports = {

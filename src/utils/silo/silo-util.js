@@ -1,5 +1,5 @@
 const fs = require('fs');
-const { tokenEq } = require("../token");
+const { tokenEq } = require('../token');
 const { BEAN, BEANWETH, BEANWSTETH, BEAN3CRV, UNRIPE_BEAN, UNRIPE_LP } = require('../../contracts/addresses.js');
 
 const AMOUNT_TO_BDV_BEAN_ETH = BigInt(119894802186829);
@@ -36,23 +36,27 @@ function getLegacySeedsPerToken(token) {
 
 async function getBeanEthUnripeLP(account, season, bs) {
   return {
-    amount: (await bs.s.a[account].lp.deposits[season]) * AMOUNT_TO_BDV_BEAN_ETH / BigInt(10 ** 18),
+    amount: ((await bs.s.a[account].lp.deposits[season]) * AMOUNT_TO_BDV_BEAN_ETH) / BigInt(10 ** 18),
     bdv: (await bs.s.a[account].lp.depositSeeds[season]) / BigInt(4)
-  }
+  };
 }
 
 async function getBean3CrvUnripeLP(account, season, bs) {
   return {
-    amount: (await bs.s.a[account].legacyV2Deposits[UNRIPE_CURVE_BEAN_METAPOOL][season].amount) * AMOUNT_TO_BDV_BEAN_3CRV / BigInt(10 ** 18),
+    amount:
+      ((await bs.s.a[account].legacyV2Deposits[UNRIPE_CURVE_BEAN_METAPOOL][season].amount) * AMOUNT_TO_BDV_BEAN_3CRV) /
+      BigInt(10 ** 18),
     bdv: await bs.s.a[account].legacyV2Deposits[UNRIPE_CURVE_BEAN_METAPOOL][season].bdv
-  }
+  };
 }
 
 async function getBeanLusdUnripeLP(account, season, bs) {
   return {
-    amount: (await bs.s.a[account].legacyV2Deposits[UNRIPE_CURVE_BEAN_LUSD_POOL][season].amount) * AMOUNT_TO_BDV_BEAN_LUSD / BigInt(10 ** 18),
+    amount:
+      ((await bs.s.a[account].legacyV2Deposits[UNRIPE_CURVE_BEAN_LUSD_POOL][season].amount) * AMOUNT_TO_BDV_BEAN_LUSD) /
+      BigInt(10 ** 18),
     bdv: await bs.s.a[account].legacyV2Deposits[UNRIPE_CURVE_BEAN_LUSD_POOL][season].bdv
-  }
+  };
 }
 
 // Returns a sum of user stalk and deposited token amounts, to be used as system-level values
@@ -66,7 +70,7 @@ function getSumOfUserTotals(block) {
         siloBalances[token] = {
           amount: 0n,
           bdv: 0n
-        }
+        };
       }
       for (let depositId of accountStorage[account].depositIdList[token]) {
         depositId = BigInt(depositId);
@@ -79,12 +83,12 @@ function getSumOfUserTotals(block) {
   return {
     stalkIfMownMinusGerminating: sumUserStalk,
     tokens: siloBalances
-  }
+  };
 }
 
 function getTotalDepositedAmount(token, BLOCK) {
   const depositsFile = JSON.parse(fs.readFileSync(`results/deposits${BLOCK}.json`));
-  return BigInt(depositsFile.totals[token].amount);
+  return BigInt(depositsFile.totals.tokens[token].amount);
 }
 
 module.exports = {
@@ -98,4 +102,4 @@ module.exports = {
   getTotalDepositedAmount,
   WHITELISTED: [BEAN, BEANWETH, BEANWSTETH, BEAN3CRV, UNRIPE_BEAN, UNRIPE_LP],
   WHITELISTED_LP: [BEANWETH, BEAN3CRV, BEANWSTETH]
-}
+};
