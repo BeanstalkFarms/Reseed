@@ -51,7 +51,7 @@ async function systemStruct(options) {
   const { podListings, podOrders } = getMarketMappings();
   const orderLockedBeans = Object.keys(podOrders).reduce((a, next) => a + BigInt(podOrders[next]), 0n);
 
-  const internalTokenBalanceTotal = getInternalBalanceMapping();
+  const internalTokenBalanceTotal = await getInternalBalanceMapping();
 
   const wellOracleSnapshots = {
     [l2Token(BEANWETH)]: beanWethSnapshot,
@@ -166,11 +166,11 @@ function getMarketMappings() {
   };
 }
 
-function getInternalBalanceMapping() {
+async function getInternalBalanceMapping() {
   const balancesFile = JSON.parse(fs.readFileSync(`results/internal-balances${BLOCK}.json`));
   const internalBalances = {};
   for (const token in balancesFile.totals) {
-    internalBalances[l2Token(token)] = BigInt(balancesFile.totals[token].l2total);
+    internalBalances[l2Token(token)] = await getL2TokenAmount(token, BigInt(balancesFile.totals[token].total), BLOCK);
   }
   return internalBalances;
 }

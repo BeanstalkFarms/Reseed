@@ -231,7 +231,7 @@ function contractAccountSums(block) {
 
   // console.log(await calcL2LpTokenSupply(BEANWETH, 20782285));
   // console.log(await calcL2LpTokenSupply(BEANWSTETH, 20782285));
-  console.log(await calcL2LpTokenSupply(BEAN3CRV, 20782285));
+  // console.log(await calcL2LpTokenSupply(BEAN3CRV, 20782285));
 
-  // contractAccountSums(20736200);
+  contractAccountSums(20736200);
 })();

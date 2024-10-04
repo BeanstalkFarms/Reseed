@@ -2,18 +2,18 @@ const fs = require('fs');
 const { BEANSTALK, BEAN, UNRIPE_BEAN, UNRIPE_LP, CRV3, BEANWETH, BEANWSTETH, BEAN3CRV } = require("./contracts/addresses");
 const { getBalance } = require("./contracts/contract");
 const { bigintDecimal } = require('./utils/json-formatter');
-const { getWellReserves, getCurveReserves } = require('./utils/pool-data');
+const { getRemoveLiquidityOut } = require('./utils/pool-data');
 const { getUnripeBeanAdjustment } = require('./utils/silo/unripe-bean-adjustment');
 const { getDuneResult } = require('./contracts/dune');
 
 let BLOCK;
 
-async function exportCirculating(block) {
+async function exportMigratedTokens(block) {
   BLOCK = block;
 
   const amounts = await getCirculatingAmounts();
 
-  const balancesOutFile = `results/contract-circulating${BLOCK}.json`;
+  const balancesOutFile = `results/migrated-tokens${BLOCK}.json`;
   await fs.promises.writeFile(balancesOutFile, JSON.stringify(amounts, bigintDecimal, 2));
   console.log(`\rWrote contracts' circulating balances to ${balancesOutFile}`);
 
@@ -30,6 +30,9 @@ async function exportCirculating(block) {
 }
 
 async function getCirculatingAmounts() {
+  // TODO: set these values to deposited + farm + unripe lp's underlying
+  const migratedBeanWethLp = 0;
+  const migratedBeanWstethLp = 0;
   const [
     bsBeans,
     bsUrbeans,
@@ -38,9 +41,8 @@ async function getCirculatingAmounts() {
     bsEthLp,
     bsWstethLp,
     bs3crvLp,
-    beanwethReserves,
-    beanwstethReserves,
-    bean3crvReserves,
+    beanwethMigrated,
+    beanwstethMigrated
   ] = await Promise.all([
     getBalance(BEAN, BEANSTALK, BLOCK),
     getBalance(UNRIPE_BEAN, BEANSTALK, BLOCK),
@@ -49,9 +51,8 @@ async function getCirculatingAmounts() {
     getBalance(BEANWETH, BEANSTALK, BLOCK),
     getBalance(BEANWSTETH, BEANSTALK, BLOCK),
     getBalance(BEAN3CRV, BEANSTALK, BLOCK),
-    getWellReserves(BEANWETH, BLOCK),
-    getWellReserves(BEANWSTETH, BLOCK),
-    getCurveReserves(BEAN3CRV, BLOCK)
+    getRemoveLiquidityOut(BEANWETH, migratedBeanWethLp, BLOCK),
+    getRemoveLiquidityOut(BEANWSTETH, migratedBeanWstethLp, BLOCK),
   ]);
   return {
     beanstalk: {
@@ -64,16 +65,16 @@ async function getCirculatingAmounts() {
     },
     pools: {
       beanweth: {
-        bean: BigInt(beanwethReserves[0]),
-        weth: BigInt(beanwethReserves[1]),
+        bean: BigInt(beanwethMigrated[0]),
+        weth: BigInt(beanwethMigrated[1]),
       },
       beanwsteth: {
-        bean: BigInt(beanwstethReserves[0]),
-        wsteth: BigInt(beanwstethReserves[1]),
+        bean: BigInt(beanwstethMigrated[0]),
+        wsteth: BigInt(beanwstethMigrated[1]),
       },
       bean3crv: {
-        bean: BigInt(bean3crvReserves[0]),
-        '3crv': BigInt(bean3crvReserves[1])
+        bean: 'to be hardcoded elsewhere',
+        usdc: 'to be hardcoded elsewhere'
       }
     }
   }
@@ -88,5 +89,5 @@ function formatHoldersAsCsv(duneResult) {
 }
 
 module.exports = {
-  exportCirculating
+  exportMigratedTokens
 };

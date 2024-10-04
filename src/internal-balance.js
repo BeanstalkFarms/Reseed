@@ -71,9 +71,7 @@ async function exportInternalBalances(block) {
           withdrawn: withdrawals[account]?.[token] ?? 0n,
           unpicked: unpicked[account]?.[token] ?? 0n,
           rinsable: rinsableSprouts[account]?.[token] ?? 0n,
-          total: sum,
-          // Scales lp token amounts according to the amount minted on l2
-          l2total: await getL2TokenAmount(token, sum, BLOCK)
+          total: sum
         };
       }
     }
@@ -91,8 +89,7 @@ async function exportInternalBalances(block) {
       withdrawn: withdrawalsByToken[token] ?? 0n,
       unpicked: unpickedByToken[token] ?? 0n,
       rinsable: rinsableByToken[token] ?? 0n,
-      total: sum,
-      l2total: Object.keys(breakdown.accounts).reduce((a, next) => a + (breakdown.accounts[next][token]?.l2total ?? 0n), 0n)
+      total: sum
     }
   }
 

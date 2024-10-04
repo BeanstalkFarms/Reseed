@@ -2,6 +2,7 @@ const fs = require('fs');
 const { packAddressAndStem } = require('../silo/silo-util');
 const { runBatchPromises } = require('../batch-promise');
 const { l2Token } = require('../token');
+const { getL2TokenAmount } = require('../balances/balances-util');
 
 let BLOCK;
 let bs;
@@ -57,13 +58,13 @@ async function accountStruct(account) {
   const stalk = BigInt(allDeposits.accounts[account]?.totals.stalkIfMownMinusGerminating ?? 0);
   const roots = stalk * BigInt(10 ** 12);
 
-  const { deposits, depositIdList, mowStatuses } = getAccountSilo(account);
+  const { deposits, depositIdList, mowStatuses } = await getAccountSilo(account);
   const fields = {
     0: getAccountField(account)
   };
 
   const germinatingStalk = await germinatingMapping(account, actualLastUpdate)
-  const internalTokenBalance = getAccountInternalBalances(account);
+  const internalTokenBalance = await getAccountInternalBalances(account);
 
   process.stdout.write(`\r${++walletProgress} / ${allAccounts.length}`);
   
@@ -90,7 +91,7 @@ async function accountStruct(account) {
   }
 }
 
-function getAccountSilo(account) {
+async function getAccountSilo(account) {
   const deposits = {};
   const depositIdList = {};
   const mowStatuses = {};
@@ -105,7 +106,8 @@ function getAccountSilo(account) {
       const deposit = allDeposits.accounts[account][token][stem];
       const depositId = packAddressAndStem(l2Token(token), stem);
       deposits[depositId] = {
-        amount: BigInt(deposit.l2Amount),
+        // Only async on the first invocation per token
+        amount: BigInt(await getL2TokenAmount(token, deposit.amount, BLOCK)),
         bdv: BigInt(deposit.bdv)
       };
       depositIdList[l2Token(token)].push(depositId);
@@ -152,10 +154,10 @@ async function germinatingMapping(account, lastUpdate) {
   };
 }
 
-function getAccountInternalBalances(account) {
+async function getAccountInternalBalances(account) {
   const internalTokenBalance = {};
   for (const token in allBalances.accounts[account]) {
-    internalTokenBalance[l2Token(token)] = BigInt(allBalances.accounts[account][token].l2total);
+    internalTokenBalance[l2Token(token)] = await getL2TokenAmount(token, BigInt(allBalances.accounts[account][token].total), BLOCK);
   }
   return internalTokenBalance;
 }
