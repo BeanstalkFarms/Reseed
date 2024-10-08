@@ -41,55 +41,56 @@ async function exportMigratedTokens(block) {
 }
 
 async function getCirculatingAmounts() {
+  //// Commented out portions due to EBIP during migration ////
   // Migrated LP tokens is deposited + farm + unripe lp's underlying
-  const beanstalk = await asyncBeanstalkContractGetter();
-  const underlyingLp = BigInt(await beanstalk.getTotalUnderlying(UNRIPE_LP));
-  const migratedBeanWethLp = getTotalDepositedAmount(BEANWETH, BLOCK) + getTotalInternalBalance(BEANWETH, BLOCK);
-  const migratedBeanWstethLp =
-    getTotalDepositedAmount(BEANWSTETH, BLOCK) + getTotalInternalBalance(BEANWSTETH, BLOCK) + underlyingLp;
-  console.log({
-    underlyingLp,
-    migratedBeanWethLp,
-    migratedBeanWstethLp
-  });
+  // const beanstalk = await asyncBeanstalkContractGetter();
+  // const underlyingLp = BigInt(await beanstalk.getTotalUnderlying(UNRIPE_LP));
+  // const migratedBeanWethLp = getTotalDepositedAmount(BEANWETH, BLOCK) + getTotalInternalBalance(BEANWETH, BLOCK);
+  // const migratedBeanWstethLp =
+  //   getTotalDepositedAmount(BEANWSTETH, BLOCK) + getTotalInternalBalance(BEANWSTETH, BLOCK) + underlyingLp;
+  // console.log({
+  //   underlyingLp,
+  //   migratedBeanWethLp,
+  //   migratedBeanWstethLp
+  // });
   const [
     bsBeans,
     bsUrbeans,
     bsUrbeanAdjustment,
-    bsUrlps,
-    bsEthLp,
-    bsWstethLp,
-    bs3crvLp,
-    beanwethMigrated,
-    beanwstethMigrated
+    bsUrlps
+    // bsEthLp,
+    // bsWstethLp,
+    // bs3crvLp
+    // beanwethMigrated,
+    // beanwstethMigrated
   ] = await Promise.all([
     getBalance(BEAN, BEANSTALK, BLOCK),
     getBalance(UNRIPE_BEAN, BEANSTALK, BLOCK),
     getUnripeBeanAdjustment(BLOCK),
-    getBalance(UNRIPE_LP, BEANSTALK, BLOCK),
-    getBalance(BEANWETH, BEANSTALK, BLOCK),
-    getBalance(BEANWSTETH, BEANSTALK, BLOCK),
-    getBalance(BEAN3CRV, BEANSTALK, BLOCK),
-    getRemoveLiquidityOut(BEANWETH, migratedBeanWethLp, BLOCK),
-    getRemoveLiquidityOut(BEANWSTETH, migratedBeanWstethLp, BLOCK)
+    getBalance(UNRIPE_LP, BEANSTALK, BLOCK)
+    // getBalance(BEANWETH, BEANSTALK, BLOCK),
+    // getBalance(BEANWSTETH, BEANSTALK, BLOCK),
+    // getBalance(BEAN3CRV, BEANSTALK, BLOCK)
+    // getRemoveLiquidityOut(BEANWETH, migratedBeanWethLp, BLOCK),
+    // getRemoveLiquidityOut(BEANWSTETH, migratedBeanWstethLp, BLOCK)
   ]);
   return {
     beanstalk: {
       beans: BigInt(bsBeans) - bsUrbeanAdjustment.ripeUnderlying,
       unripeBeans: BigInt(bsUrbeans) - bsUrbeanAdjustment.unripeTokens,
-      unripeLp: BigInt(bsUrlps),
-      ethLp: BigInt(bsEthLp),
-      wstethLp: BigInt(bsWstethLp),
-      bs3crvLp: BigInt(bs3crvLp)
+      unripeLp: BigInt(bsUrlps)
+      // ethLp: BigInt(bsEthLp),
+      // wstethLp: BigInt(bsWstethLp),
+      // bs3crvLp: BigInt(bs3crvLp)
     },
     pools: {
       beanweth: {
-        bean: BigInt(beanwethMigrated[0]),
-        weth: BigInt(beanwethMigrated[1])
+        bean: 0n, //TODO (bigints)
+        weth: 0n //TODO
       },
       beanwsteth: {
-        bean: BigInt(beanwstethMigrated[0]),
-        wsteth: BigInt(beanwstethMigrated[1])
+        bean: 0n, //TODO
+        wsteth: 0n //TODO
       },
       bean3crv: {
         bean: 'to be hardcoded elsewhere',
