@@ -22,7 +22,7 @@ async function calcL2LpTokenSupply(lpTokenAddressL1, BLOCK_L1) {
 
   if (lpTokenAddressL1 === BEAN3CRV) {
     const wellFunction = await getContractAsync(STABLE2_FN, wellFnAbi, { provider: arbProviderThenable });
-    const beanUsdcReserves = BigInt(fs.readFileSync(`inputs/bean-usdc-reserves.txt`, 'utf8').split(','));
+    const beanUsdcReserves = fs.readFileSync(`inputs/bean-usdc-reserves.txt`, 'utf8').split(',').map(BigInt);
     const abiCoder = new ethers.AbiCoder();
     return await wellFunction.callStatic.calcLpTokenSupply(
       [beanUsdcReserves[0], beanUsdcReserves[1]],

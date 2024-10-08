@@ -18,8 +18,12 @@ const {
 } = require('../barn/barn-util.js');
 const { tokenEq, l2Token } = require('../token.js');
 const { createAsyncERC20ContractGetter } = require('../../contracts/contract.js');
-const { WHITELISTED, getSumOfUserTotals } = require('../silo/silo-util.js');
-const { getL2TokenAmount, getTotalInternalBalance } = require('../balances/balances-util.js');
+const { WHITELISTED, getL2AccountSiloTotals } = require('../silo/silo-util.js');
+const {
+  getL2TokenAmount,
+  getTotalInternalBalance,
+  getL2AccountInternalTotals
+} = require('../balances/balances-util.js');
 const { getUnripeBeanAdjustment } = require('../silo/unripe-bean-adjustment.js');
 
 let BLOCK;
@@ -64,7 +68,7 @@ async function systemStruct(options) {
   const { podListings, podOrders } = getMarketMappings();
   const orderLockedBeans = Object.keys(podOrders).reduce((a, next) => a + BigInt(podOrders[next]), 0n);
 
-  const internalTokenBalanceTotal = await getInternalBalanceMapping();
+  const internalTokenBalanceTotal = getInternalBalanceMapping();
 
   const wellOracleSnapshots = {
     [l2Token(BEANWETH)]: beanWethSnapshot,
@@ -78,7 +82,7 @@ async function systemStruct(options) {
 
   const usdTokenPrice = {
     [l2Token(BEANWETH)]: 1
-    // TODO: BEANwstETH?
+    // NOTE: BEANwstETH?
   };
 
   // These are all 0 even for seasons in which a plenty did occur
@@ -170,18 +174,14 @@ function getMarketMappings() {
   };
 }
 
-async function getInternalBalanceMapping() {
-  const internalBalances = {};
-  for (const token in balancesFile.totals) {
-    internalBalances[l2Token(token)] = await getL2TokenAmount(token, getTotalInternalBalance(token, BLOCK), BLOCK);
-  }
-  return internalBalances;
+function getInternalBalanceMapping() {
+  return getL2AccountInternalTotals(BLOCK);
 }
 
 async function siloStruct() {
   console.log('Gathering silo info...');
 
-  userSiloTotals = getSumOfUserTotals(BLOCK);
+  userSiloTotals = getL2AccountSiloTotals(BLOCK);
   const stalk = userSiloTotals.stalkIfMownMinusGerminating;
   const roots = stalk * BigInt(10 ** 12);
 
@@ -377,7 +377,7 @@ async function whitelistStatusStructs() {
       isWhitelisted,
       isWhitelistedLp,
       isWhitelistedWell,
-      isSoppable: tokenEq(token, BEANWETH) // TODO: how to determine which one is soppable?
+      isSoppable: tokenEq(token, BEANWETH) // NOTE: how to determine which one is soppable?
     });
   }
   return whitelistStatuses;

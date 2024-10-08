@@ -60,7 +60,7 @@ async function getBeanLusdUnripeLP(account, season, bs) {
 }
 
 // Returns a sum of user stalk and deposited token amounts, to be used as system-level values
-function getSumOfUserTotals(block) {
+function getL2AccountSiloTotals(block) {
   const accountStorage = JSON.parse(fs.readFileSync(`results/storage-accounts${block}.json`));
   const siloBalances = {};
   let sumUserStalk = 0n;
@@ -98,7 +98,7 @@ module.exports = {
   getBeanEthUnripeLP,
   getBean3CrvUnripeLP,
   getBeanLusdUnripeLP,
-  getSumOfUserTotals,
+  getL2AccountSiloTotals,
   getTotalDepositedAmount,
   WHITELISTED: [BEAN, BEANWETH, BEANWSTETH, BEAN3CRV, UNRIPE_BEAN, UNRIPE_LP],
   WHITELISTED_LP: [BEANWETH, BEAN3CRV, BEANWSTETH]

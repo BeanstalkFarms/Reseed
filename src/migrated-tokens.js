@@ -26,7 +26,7 @@ async function exportMigratedTokens(block) {
 
   const balancesOutFile = `results/migrated-tokens${BLOCK}.json`;
   await fs.promises.writeFile(balancesOutFile, JSON.stringify(amounts, bigintDecimal, 2));
-  console.log(`\rWrote contracts' circulating balances to ${balancesOutFile}`);
+  console.log(`\rWrote migrated token amounts to ${balancesOutFile}`);
 
   // Originall I provided these values in a simple csv file, retain the same formatting for simplicity.
   const urbeanHolders = await getDuneResult(4045304, BLOCK);

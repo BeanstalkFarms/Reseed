@@ -37,7 +37,7 @@ async function getCurrentInternalBalances(bs, BLOCK, BATCH_SIZE) {
 }
 
 function getTotalInternalBalance(token, BLOCK) {
-  const balancesFile = JSON.parse(fs.readFileSync(`results/internal-balances${BLOCK}.json`));
+  const balancesFile = JSON.parse(fs.readFileSync(`results/internal-balances${BLOCK}.json`, 'utf8'));
   return BigInt(balancesFile.totals[token].total);
 }
 
@@ -152,11 +152,27 @@ async function getL2TokenAmount(token, amount, BLOCK) {
   return l2amount;
 }
 
+// Returns the sum of user internal amounts, to be used as system-level values
+function getL2AccountInternalTotals(block) {
+  const accountStorage = JSON.parse(fs.readFileSync(`results/storage-accounts${block}.json`));
+  const internalBalances = {};
+  for (const account in accountStorage) {
+    for (const token in accountStorage[account].internalTokenBalance) {
+      if (!internalBalances[token]) {
+        internalBalances[token] = 0n;
+      }
+      internalBalances[token] += BigInt(accountStorage[account].internalTokenBalance[token]);
+    }
+  }
+  return internalBalances;
+}
+
 module.exports = {
   getCurrentInternalBalances,
   getTotalInternalBalance,
   getWithdrawals,
   getUnpickedUnripe,
   getRinsableUserSprouts,
-  getL2TokenAmount
+  getL2TokenAmount,
+  getL2AccountInternalTotals
 };
