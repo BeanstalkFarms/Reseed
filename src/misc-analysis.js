@@ -5,7 +5,7 @@ const { exportDeposits } = require('./silo.js');
 const { getDuneResult } = require('./contracts/dune.js');
 const { runBatchPromises } = require('./utils/batch-promise.js');
 const retryable = require('./utils/retryable.js');
-const { asyncBeanstalkContractGetter } = require('./contracts/contract.js');
+const { asyncBeanstalkContractGetter, getBalance, createAsyncERC20ContractGetter } = require('./contracts/contract.js');
 const { bigintDecimal } = require('./utils/json-formatter.js');
 const { calcL2LpTokenSupply, getCurveReserves } = require('./utils/pool-data.js');
 const { l2Token } = require('./utils/token.js');
@@ -236,5 +236,17 @@ function contractAccountSums(block) {
   // console.log(await calcL2LpTokenSupply(BEANWSTETH, 20782285));
   // console.log(await calcL2LpTokenSupply(BEAN3CRV, 20782285));
 
-  contractAccountSums(20736200);
+  // contractAccountSums(20736200);
+
+  console.log('Total Beans in bean3crv contract before:', BigInt(await getBalance(BEAN, BEAN3CRV, 20922061)));
+  console.log('Total Beans in bean3crv contract after: ', BigInt(await getBalance(BEAN, BEAN3CRV, 20922062)));
+  const bean3crvContract = await createAsyncERC20ContractGetter(BEAN3CRV)();
+  console.log(
+    'Total bean3crv lp token supply before:',
+    BigInt(await bean3crvContract.totalSupply({ blockTag: 20922061 }))
+  );
+  console.log(
+    'Total bean3crv lp token supply after: ',
+    BigInt(await bean3crvContract.totalSupply({ blockTag: 20922062 }))
+  );
 })();

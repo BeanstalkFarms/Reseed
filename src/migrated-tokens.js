@@ -43,11 +43,11 @@ async function exportMigratedTokens(block) {
 async function getCirculatingAmounts() {
   //// Commented out portions due to EBIP during migration ////
   // Migrated LP tokens is deposited + farm + unripe lp's underlying
-  // const beanstalk = await asyncBeanstalkContractGetter();
-  // const underlyingLp = BigInt(await beanstalk.getTotalUnderlying(UNRIPE_LP));
+  const beanstalk = await asyncBeanstalkContractGetter();
+  const underlyingLp = BigInt(await beanstalk.getTotalUnderlying(UNRIPE_LP, { blockTag: BLOCK }));
   // const migratedBeanWethLp = getTotalDepositedAmount(BEANWETH, BLOCK) + getTotalInternalBalance(BEANWETH, BLOCK);
-  // const migratedBeanWstethLp =
-  //   getTotalDepositedAmount(BEANWSTETH, BLOCK) + getTotalInternalBalance(BEANWSTETH, BLOCK) + underlyingLp;
+  const migratedBeanWstethLp =
+    getTotalDepositedAmount(BEANWSTETH, BLOCK) + getTotalInternalBalance(BEANWSTETH, BLOCK) + underlyingLp;
   // console.log({
   //   underlyingLp,
   //   migratedBeanWethLp,
@@ -57,23 +57,24 @@ async function getCirculatingAmounts() {
     bsBeans,
     bsUrbeans,
     bsUrbeanAdjustment,
-    bsUrlps
+    bsUrlps,
     // bsEthLp,
     // bsWstethLp,
     // bs3crvLp
     // beanwethMigrated,
-    // beanwstethMigrated
+    beanwstethMigrated
   ] = await Promise.all([
     getBalance(BEAN, BEANSTALK, BLOCK),
     getBalance(UNRIPE_BEAN, BEANSTALK, BLOCK),
     getUnripeBeanAdjustment(BLOCK),
-    getBalance(UNRIPE_LP, BEANSTALK, BLOCK)
+    getBalance(UNRIPE_LP, BEANSTALK, BLOCK),
     // getBalance(BEANWETH, BEANSTALK, BLOCK),
     // getBalance(BEANWSTETH, BEANSTALK, BLOCK),
     // getBalance(BEAN3CRV, BEANSTALK, BLOCK)
     // getRemoveLiquidityOut(BEANWETH, migratedBeanWethLp, BLOCK),
-    // getRemoveLiquidityOut(BEANWSTETH, migratedBeanWstethLp, BLOCK)
+    getRemoveLiquidityOut(BEANWSTETH, migratedBeanWstethLp, BLOCK)
   ]);
+  console.log('beanwsteth migrated:', beanwstethMigrated); // Informational only
   return {
     beanstalk: {
       beans: BigInt(bsBeans) - bsUrbeanAdjustment.ripeUnderlying,
@@ -85,12 +86,12 @@ async function getCirculatingAmounts() {
     },
     pools: {
       beanweth: {
-        bean: 0n, //TODO (bigints)
-        weth: 0n //TODO
+        bean: 95114433736n,
+        weth: 17368572494882417988n
       },
       beanwsteth: {
-        bean: 0n, //TODO
-        wsteth: 0n //TODO
+        bean: 14312184639527n,
+        wsteth: 2189190465707058218485n
       },
       bean3crv: {
         bean: 'to be hardcoded elsewhere',
