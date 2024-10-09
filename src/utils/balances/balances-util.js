@@ -1,6 +1,6 @@
 const fs = require('fs');
 const { runBatchPromises } = require('../batch-promise');
-const { BEAN, UNRIPE_BEAN, UNRIPE_LP } = require('../../contracts/addresses.js');
+const { BEAN, UNRIPE_BEAN, UNRIPE_LP, BEAN3CRV, BEANWETH, BEANWSTETH } = require('../../contracts/addresses.js');
 const { WHITELISTED, WHITELISTED_LP } = require('../silo/silo-util.js');
 const { createAsyncERC20ContractGetter } = require('../../contracts/contract.js');
 const { l2Token } = require('../token.js');
@@ -123,9 +123,13 @@ function getRinsableUserSprouts(BLOCK) {
   }, {});
 }
 
-// Using the percentage of the given amount against the total token supply on Ethereum,
+// Using the percentage of the given amount against the migrated token supply on Ethereum,
 // returns the corresponding share of tokens on L2.
-const l1TokenSupply = {};
+const l1TokenSupply = {
+  [BEAN3CRV]: 93024994011998500979055n,
+  [BEANWETH]: 1285302274818975626731n,
+  [BEANWSTETH]: 177008751637571633047123n
+};
 const l2TokenSupply = {};
 async function getL2TokenAmount(token, amount, BLOCK) {
   if (amount === 0n) {

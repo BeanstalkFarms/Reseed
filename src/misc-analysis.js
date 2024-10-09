@@ -238,15 +238,17 @@ function contractAccountSums(block) {
 
   // contractAccountSums(20736200);
 
-  console.log('Total Beans in bean3crv contract before:', BigInt(await getBalance(BEAN, BEAN3CRV, 20922061)));
-  console.log('Total Beans in bean3crv contract after: ', BigInt(await getBalance(BEAN, BEAN3CRV, 20922062)));
-  const bean3crvContract = await createAsyncERC20ContractGetter(BEAN3CRV)();
-  console.log(
-    'Total bean3crv lp token supply before:',
-    BigInt(await bean3crvContract.totalSupply({ blockTag: 20922061 }))
-  );
-  console.log(
-    'Total bean3crv lp token supply after: ',
-    BigInt(await bean3crvContract.totalSupply({ blockTag: 20922062 }))
-  );
+  // console.log('Total Beans in bean3crv contract before:', BigInt(await getBalance(BEAN, BEAN3CRV, 20922061)));
+  // console.log('Total Beans in bean3crv contract after: ', BigInt(await getBalance(BEAN, BEAN3CRV, 20922062)));
+  // const bean3crvContract = await createAsyncERC20ContractGetter(BEAN3CRV)();
+  // console.log(
+  //   'Total bean3crv lp token supply before:',
+  //   BigInt(await bean3crvContract.totalSupply({ blockTag: 20922061 }))
+  // );
+  // console.log(
+  //   'Total bean3crv lp token supply after: ',
+  //   BigInt(await bean3crvContract.totalSupply({ blockTag: 20922062 }))
+  // );
+
+  contractAccountSums(20921737);
 })();
